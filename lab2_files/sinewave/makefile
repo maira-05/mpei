@@ -18,12 +18,12 @@ libsinewave.a: $(LIB_OBJS)
 
 # ----------------------------------------------------------------------------
 # Link sinewave.o against the library to build the final executable
-bin/sinewave: sinewave.o libsinewave.a
+bin/sinewave.elf: sinewave.o libsinewave.a
 	mkdir -p bin
-	$(CC) $(CFLAGS) sinewave.o -L. -lsinewave -o bin/sinewave -lm
+	$(CC) $(CFLAGS) sinewave.o -L. -lsinewave -o bin/sinewave.elf -lm
 
-run: bin/sinewave
-	./bin/sinewave
+run: bin/sinewave.elf
+	./bin/sinewave.elf
 
 .PHONY: clean
 clean:
