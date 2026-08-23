@@ -34,12 +34,12 @@ libcoremark.a: $(LIB_OBJS)
 
 # ----------------------------------------------------------------------------
 # Link core_main.o against the library to build the final executable
-bin/coremark: core_main.o libcoremark.a
+bin/coremark.elf: core_main.o libcoremark.a
 	mkdir -p bin
-	$(CC) $(CFLAGS) core_main.o -L. -lcoremark -o bin/coremark -lm
+	$(CC) $(CFLAGS) core_main.o -L. -lcoremark -o bin/coremark.elf -lm
 
-run: bin/coremark
-	./bin/coremark 0x0 0x0 0x66 $(N) 7 1 2000
+run: bin/coremark.elf
+	./bin/coremark.elf 0x0 0x0 0x66 $(N) 7 1 2000
 
 
 .PHONY: clean
