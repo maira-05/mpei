@@ -1,0 +1,97 @@
+
+Memory Configuration
+
+Name             Origin             Length             Attributes
+FLASH            0x0000000000000000 0x0000000000100000 xr
+RAM              0x0000000020000000 0x0000000000020000 xrw
+*default*        0x0000000000000000 0xffffffffffffffff
+
+Linker script and memory map
+
+LOAD /tmp/ccsS5W9u.o
+
+.text           0x0000000000000000       0x80
+ *(.isr_vector)
+ .isr_vector    0x0000000000000000       0x40 /tmp/ccsS5W9u.o
+                0x0000000000000000                g_pfnVectors
+ *(.text*)
+ .text          0x0000000000000040        0x0 /tmp/ccsS5W9u.o
+ .text.Reset_Handler
+                0x0000000000000040       0x40 /tmp/ccsS5W9u.o
+                0x0000000000000040                Reset_Handler
+                0x000000000000006a                DebugMon_Handler
+                0x000000000000006a                HardFault_Handler
+                0x000000000000006a                SysTick_Handler
+                0x000000000000006a                PendSV_Handler
+                0x000000000000006a                NMI_Handler
+                0x000000000000006a                UsageFault_Handler
+                0x000000000000006a                MemManage_Handler
+                0x000000000000006a                SVC_Handler
+                0x000000000000006a                BusFault_Handler
+
+.glue_7         0x0000000000000080        0x0
+ .glue_7        0x0000000000000080        0x0 linker stubs
+
+.glue_7t        0x0000000000000080        0x0
+ .glue_7t       0x0000000000000080        0x0 linker stubs
+
+.vfp11_veneer   0x0000000000000080        0x0
+ .vfp11_veneer  0x0000000000000080        0x0 linker stubs
+
+.v4_bx          0x0000000000000080        0x0
+ .v4_bx         0x0000000000000080        0x0 linker stubs
+
+.iplt           0x0000000000000080        0x0
+ .iplt          0x0000000000000080        0x0 /tmp/ccsS5W9u.o
+
+.rel.dyn        0x0000000000000080        0x0
+ .rel.iplt      0x0000000000000080        0x0 /tmp/ccsS5W9u.o
+
+.rodata         0x0000000000000080        0x0
+ *(.rodata*)
+ *(.srodata*)
+                0x0000000000000080                _sidata = .
+
+.data           0x0000000020000000       0x20 load address 0x0000000000000080
+                0x0000000020000000                _sdata = .
+ *(.data*)
+ .data          0x0000000020000000       0x20 /tmp/ccsS5W9u.o
+ *(.sdata*)
+                0x0000000020000020                _edata = .
+
+.igot.plt       0x0000000020000020        0x0 load address 0x00000000000000a0
+ .igot.plt      0x0000000020000020        0x0 /tmp/ccsS5W9u.o
+
+.bss            0x0000000020000020       0x18 load address 0x00000000000000a0
+                0x0000000020000020                _sbss = .
+ *(.bss*)
+ .bss           0x0000000020000020       0x18 /tmp/ccsS5W9u.o
+                0x0000000020000038                _ebss = .
+
+.stack          0x0000000020000038    0x1ffc8 load address 0x00000000000000b8
+                0x0000000020020000                . = (ORIGIN (RAM) + LENGTH (RAM))
+ *fill*         0x0000000020000038    0x1ffc8 
+                0x0000000020020000                stack_top = .
+OUTPUT(app.elf elf32-littlearm)
+LOAD linker stubs
+
+.ARM.attributes
+                0x0000000000000000       0x21
+ .ARM.attributes
+                0x0000000000000000       0x21 /tmp/ccsS5W9u.o
+
+.debug_line     0x0000000000000000       0x52
+ .debug_line    0x0000000000000000       0x52 /tmp/ccsS5W9u.o
+
+.debug_info     0x0000000000000000       0x26
+ .debug_info    0x0000000000000000       0x26 /tmp/ccsS5W9u.o
+
+.debug_abbrev   0x0000000000000000       0x14
+ .debug_abbrev  0x0000000000000000       0x14 /tmp/ccsS5W9u.o
+
+.debug_aranges  0x0000000000000000       0x20
+ .debug_aranges
+                0x0000000000000000       0x20 /tmp/ccsS5W9u.o
+
+.debug_str      0x0000000000000000       0x55
+ .debug_str     0x0000000000000000       0x55 /tmp/ccsS5W9u.o
