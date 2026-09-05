@@ -61,7 +61,7 @@ LoopFillZerobss:
 ToFillZerobss:
     CMP R0, R1
     BLT FillZerobss
-
+    B .
     BKPT
     
 _infinite_loop:
@@ -88,3 +88,9 @@ DebugMon_Handler:
 PendSV_Handler:
 SysTick_Handler:
     B .
+
+.section .bss
+.align 4
+.global array
+array:
+    .space 1000     /* Reserva 1000 bytes, todos en 0 por defecto */

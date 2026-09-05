@@ -16,7 +16,7 @@ else
 	QEMU = qemu-system-arm -M $(MACHINE) -kernel $(APPNAME).elf -serial mon:stdio -nographic --no-reboot -S -s
 endif
 
-CFLAGS+=-Og -g
+CFLAGS+=-O0 -g
 CFLAGS+=-fno-pic
 CFLAGS+=$(ARCH)
 
