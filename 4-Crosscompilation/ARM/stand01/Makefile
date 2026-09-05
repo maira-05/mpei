@@ -1,4 +1,3 @@
-
 APPNAME = stand00
 MACHINE = netduinoplus2
 
