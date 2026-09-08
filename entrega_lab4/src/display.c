@@ -18,12 +18,17 @@ static const uint8_t tabla_7seg[10] = {
 
 void Display_Init(void)
 {
-    // Configura PB0-PB6 como salida (segmentos)
-    // Configura PB8, PB9, PB10 como salida (selectores de dígito)
-    // (llamadas a write_pin_state / configuración de MODER van aquí)
-}
+    
+    for (int pin = 0; pin <= 6; pin++) {
+        GPIOB->MODER &= ~(3 << (pin * 2)); 
+        GPIOB->MODER |=  (1 << (pin * 2)); 
+    }
 
-// Enciende un solo display con un dígito específico
+    for (int pin = 8; pin <= 10; pin++) {
+        GPIOB->MODER &= ~(3 << (pin * 2));
+        GPIOB->MODER |=  (1 << (pin * 2));
+    }
+}
 void Display_SetDigit(uint8_t display_index, uint8_t digit)
 {
     uint8_t patron = tabla_7seg[digit];

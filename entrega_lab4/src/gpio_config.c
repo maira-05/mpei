@@ -6,6 +6,7 @@
 void GPIO_Config(void)
 {
   RCC->AHB1ENR |= (1 << 0); // Enable GPIOA clock in RCC_AHB1ENR register (bit 0)
+  RCC->AHB1ENR |= (1 << 1);
   RCC->AHB1ENR |= (1 << 2); // Enable GPIOC clock in RCC_AHB1ENR register (bit 2)
 
   // do two dummy reads after enabling the peripheral clock, as per the errata
