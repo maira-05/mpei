@@ -62,8 +62,6 @@ ToFillZerobss:
     CMP R0, R1
     BLT FillZerobss
 
-	BL __libc_init_array
-
     BL main
     
 _infinite_loop:

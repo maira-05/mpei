@@ -3,7 +3,7 @@ MACHINE = netduinoplus2
 
 
 CC =  arm-none-eabi-gcc
-CFLAGS = -Wall -Wextra -std=c11 -ffreestanding
+CFLAGS = -Wall -Wextra -std=c11 -ffreestanding -Iinc
 OBJCOPY =  arm-none-eabi-objcopy
 OBJDUMP =  arm-none-eabi-objdump
 LINK = arm-none-eabi-ld
@@ -16,7 +16,7 @@ else
 	QEMU = qemu-system-arm -M $(MACHINE) -kernel $(APPNAME).elf -serial mon:stdio -nographic --no-reboot -S -s
 endif
 
-C_SRC = $(wildcard *.c)
+C_SRC = $(wildcard *.c) $(wildcard src/*.c)
 ASM_SRC = $(wildcard *.S)
 # Convert the list of .c files into a list of .o object files
 OBJS = $(patsubst %.c, %.o, $(C_SRC))
