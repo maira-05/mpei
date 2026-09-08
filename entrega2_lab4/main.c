@@ -3,24 +3,26 @@
 #include "gpio_config.h"
 #include "display.h"
 
-uint8_t leer_dip_switch(void)
-{
-    return (uint8_t)(GPIOC->IDR & 0xFF); 
-}
+
 
 int main(void)
 {
     GPIO_Config();     
     Display_Init();    
-
+    int variable =0;
+    int variable2 =1;
+    int resultado = 0;
     while(1)
     {
-        uint8_t valor = leer_dip_switch();
-
-        uint8_t centenas = valor / 100;
-        uint8_t decenas  = (valor / 10) % 10;
-        uint8_t unidades = valor % 10;
+        resultado= variable + variable2;
+        
+        uint8_t centenas = resultado / 100;
+        uint8_t decenas  = (resultado / 10) % 10;
+        uint8_t unidades = resultado % 10;
+        variable=variable2;
+        variable2=resultado;
 
         Display_Refresh(centenas, decenas, unidades);
+        
     }
 }
