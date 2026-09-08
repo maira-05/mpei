@@ -8,7 +8,7 @@ OBJCOPY =  arm-none-eabi-objcopy
 OBJDUMP =  arm-none-eabi-objdump
 LINK = arm-none-eabi-ld
 ARCH =  -mcpu=cortex-m4 
-LINKERSCRIPT = linker_script.ld
+LINKERSCRIPT =linker_scrpt.ld
 
 ifeq ($(DBG),1)	
 	QEMU = qemu-system-arm -M $(MACHINE) -kernel $(APPNAME).elf -serial mon:stdio -nographic --no-reboot -S -s
