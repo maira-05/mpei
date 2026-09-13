@@ -2,14 +2,25 @@
 #include "stm32f401.h"
 #include "gpio_config.h"
 
-#define NUM_CELLS 9
+uint8_t board[NUM_CELLS]; // 0 = libre, 1 = rojo (jugador), 2 = verde (máquina)
 
-extern const uint8_t button_pins[NUM_CELLS];
-extern const uint8_t red_pins[NUM_CELLS];
-extern const uint8_t green_pins[NUM_CELLS];
+void delay_ms(uint32_t ms)
+{
+    for (volatile uint32_t i = 0; i < ms * 4000; i++);
+}
 
-uint8_t board[NUM_CELLS]; // 0 = vacío, 1 = rojo, 2 = verde
-uint8_t turno = 1;        // empieza el jugador rojo
+void maquina_juega(void)
+{
+    for (int i = 0; i < NUM_CELLS; i++)
+    {
+        if (board[i] == 0)
+        {
+            board[i] = 2;
+            write_pin_state(GPIOA, green_pins[i], 1);
+            return;
+        }
+    }
+}
 
 int main(void)
 {
@@ -21,26 +32,20 @@ int main(void)
     {
         for (int i = 0; i < NUM_CELLS; i++)
         {
-            // Botón presionado (activo en bajo) y celda todavía vacía
             if (board[i] == 0 && read_pin_state(GPIOC, button_pins[i]) == 0)
             {
-                // Debounce: espera un poco y confirma que sigue presionado
                 for (volatile uint32_t d = 0; d < 50000; d++);
 
                 if (read_pin_state(GPIOC, button_pins[i]) == 0)
                 {
-                    if (turno == 1) {
-                        write_pin_state(GPIOB, red_pins[i], 1);
-                        board[i] = 1;
-                    } else {
-                        write_pin_state(GPIOA, green_pins[i], 1);
-                        board[i] = 2;
-                    }
+                    board[i] = 1;
+                    write_pin_state(GPIOB, red_pins[i], 1);
 
-                    turno = (turno == 1) ? 2 : 1; // alterna turno
-
-                    // Espera a que el usuario suelte el botón antes de seguir
                     while (read_pin_state(GPIOC, button_pins[i]) == 0);
+
+                    delay_ms(2000);
+
+                    maquina_juega();
                 }
             }
         }

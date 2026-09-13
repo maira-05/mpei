@@ -10,6 +10,7 @@ extern const uint8_t button_pins[NUM_CELLS];
 extern const uint8_t red_pins[NUM_CELLS];
 extern const uint8_t green_pins[NUM_CELLS];
 
+
 void GPIO_Config_Triqui(void);
 void GPIO_Config(void);
 
