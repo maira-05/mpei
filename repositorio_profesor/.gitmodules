@@ -1,0 +1,7 @@
+[submodule "5-ARM-Boards/NUCLEO-64/STM32utils"]
+	path = 5-ARM-Boards/NUCLEO-64/STM32utils
+	url = https://github.com/STMicroelectronics/STM32CubeF4.git
+
+[submodule "5-ARM-Boards/STM32-Black-Pill/STM32utils"]
+	path = 5-ARM-Boards/STM32-Black-Pill/STM32utils
+	url = https://github.com/STMicroelectronics/STM32CubeF4.git
