@@ -1,5 +1,9 @@
 #include "gpio_config.h"
 
+#ifndef NUM_CELLS
+#define NUM_CELLS 9
+#endif
+
 const uint8_t button_pins[NUM_CELLS] = {0, 1, 2, 3, 4, 5, 6, 7, 8};       
 const uint8_t red_pins[NUM_CELLS]    = {0, 1, 2, 3, 4, 5, 6, 7, 8};       
 const uint8_t green_pins[NUM_CELLS]  = {0, 1, 10, 4, 11, 6, 7, 8, 9};     
