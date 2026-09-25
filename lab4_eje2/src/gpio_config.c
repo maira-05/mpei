@@ -1,8 +1,8 @@
 #include "gpio_config.h"
 
-const uint8_t button_pins[NUM_CELLS] = {0, 1, 2, 3, 4, 5, 6, 7, 8};       // PC0-PC8
-const uint8_t red_pins[NUM_CELLS]    = {0, 1, 2, 3, 4, 5, 6, 7, 8};       // PB0-PB8
-const uint8_t green_pins[NUM_CELLS]  = {0, 1, 10, 4, 11, 6, 7, 8, 9};     // PA (tu orden)
+const uint8_t button_pins[NUM_CELLS] = {0, 1, 2, 3, 4, 5, 6, 7, 8};       
+const uint8_t red_pins[NUM_CELLS]    = {0, 1, 2, 3, 4, 5, 6, 7, 8};       
+const uint8_t green_pins[NUM_CELLS]  = {0, 1, 10, 4, 11, 6, 7, 8, 9};     
 
 
 void GPIO_Config(void)
