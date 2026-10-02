@@ -1,7 +1,13 @@
 #ifndef __GPIO_CONFIG_H__
 #define __GPIO_CONFIG_H__
 #define STM32F401xE
+
+#if defined(STM32F401xE)
+#include "stm32f401xe.h"
+#else
 #include "stm32f4xx.h"
+#endif
+
 #include "stdint.h"
 #include "system_config.h"
 
