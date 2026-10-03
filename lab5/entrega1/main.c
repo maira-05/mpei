@@ -29,7 +29,7 @@
 #define SEG_ACTIVE_LOW    1
 /* 1 = digitos manejados con transistor PNP (el digito enciende con 0 en la base)
    0 = pin del digito conectado directo al anodo comun (enciende con 1)          */
-#define DIG_ACTIVE_LOW    1
+#define DIG_ACTIVE_LOW    0
 
 #define INPUT_PIN         0         // PA0 -> TIM5_CH1 (AF2)
 #define PWM_TEST_PIN      5         // PA5 -> TIM2_CH1 (AF1), senal de prueba
@@ -192,17 +192,61 @@ void TIM5_IC_Init(void){
   NVIC_EnableIRQ(TIM5_IRQn);                        // Enable the TIM5 IRQ
 }
 
+/* --------------------------------- Reloj --------------------------------- */
+/* clock_config() del curso usa el oscilador interno HSI (RC, error tipico 1-2 %),
+   y ese error pasa directo a la frecuencia medida. Aqui se usa como fuente del PLL
+   la senal de 8 MHz que entrega el ST-LINK de la NUCLEO (HSE en modo bypass, viene
+   de un cristal), con los mismos 84 MHz: 8 MHz / M=8 * N=336 / P=4 = 84 MHz.
+   Si el HSE no arranca, se usa clock_config() (HSI) como respaldo.               */
+void clock_config_HSE(void){
+  uint32_t timeout = 500000;
+
+  WRITE_REG_FIELD(RCC->CR, RCC_CR_HSEBYP, 1);  // HSE en bypass (reloj externo, no cristal)
+  WRITE_REG_FIELD(RCC->CR, RCC_CR_HSEON, 1);   // Enciende el HSE
+  while(!(READ_REG_FIELD(RCC->CR, RCC_CR_HSERDY)) && timeout){
+    timeout--;
+  }
+  if(timeout == 0){                            // No hay reloj externo: usar HSI
+    WRITE_REG_FIELD(RCC->CR, RCC_CR_HSEON, 0);
+    clock_config();
+    return;
+  }
+
+  WRITE_REG_FIELD(FLASH->ACR,FLASH_ACR_LATENCY,FLASH_ACR_LATENCY_3WS);
+
+  WRITE_REG_FIELD(RCC->PLLCFGR,RCC_PLLCFGR_PLLSRC,1);  // Fuente del PLL = HSE
+  WRITE_REG_FIELD(RCC->PLLCFGR,RCC_PLLCFGR_PLLM,8);    // M=8  -> 1 MHz
+  WRITE_REG_FIELD(RCC->PLLCFGR,RCC_PLLCFGR_PLLN,336);  // N=336 -> 336 MHz
+  WRITE_REG_FIELD(RCC->PLLCFGR,RCC_PLLCFGR_PLLP,1);    // P=4  -> 84 MHz
+  WRITE_REG_FIELD(RCC->PLLCFGR,RCC_PLLCFGR_PLLQ,7);    // Q=7
+
+  WRITE_REG_FIELD(RCC->CFGR,RCC_CFGR_PPRE1,4);         // APB1 = 42 MHz
+  WRITE_REG_FIELD(RCC->CFGR,RCC_CFGR_PPRE2,0);
+  WRITE_REG_FIELD(RCC->CFGR,RCC_CFGR_HPRE,0);
+
+  WRITE_REG_FIELD(RCC->CR,RCC_CR_PLLON,1);             // enable the PLL
+  while (! (READ_REG_FIELD(RCC->CR,RCC_CR_PLLRDY)));   // Wait for the PLL be ready
+
+  WRITE_REG_FIELD(RCC->CFGR,RCC_CFGR_SW,RCC_CFGR_SW_PLL);
+  while (!(READ_REG_FIELD(RCC->CFGR,RCC_CFGR_SWS_PLL))); // Wait for the system to switch the clk
+}
+
 /* --------------------------------- GPIO ---------------------------------- */
 void GPIO_board_config(void){
   GPIO_InitTypeDef GPIO_Init = {0};
-  uint32_t pin;
+  int pin;
+
+  /* OJO: la macro WRITE_REG_FIELD que usa GPIO_Config (archivo del curso) borra la
+     configuracion de los pines de MENOR numero del mismo puerto cuando la mascara
+     viene desplazada. Por eso en cada puerto se configura SIEMPRE del pin mayor
+     al pin menor (igual que en el ejemplo 13: primero PA5 y luego PA0).          */
 
   /* Estado inicial: todo apagado antes de poner los pines como salida */
   GPIO_clock_enable(GPIOC);
   WRITE_REG(GPIOC->ODR, (SEG_ACTIVE_LOW ? SEG_MASK : 0) | (DIG_ACTIVE_LOW ? DIG_MASK : 0));
 
-  /* PC0..PC7 segmentos y PC8..PC12 digitos: salidas push-pull */
-  for(pin = SEG_FIRST_PIN; pin < DIG_FIRST_PIN + NUM_DIGITS; pin++){
+  /* PC12..PC8 digitos y PC7..PC0 segmentos: salidas push-pull (orden descendente) */
+  for(pin = DIG_FIRST_PIN + NUM_DIGITS - 1; pin >= SEG_FIRST_PIN; pin--){
     GPIO_Init.Pin = pin;
     GPIO_Init.Mode = 1; // Output mode
     GPIO_Init.Pull = 0; // No pull-up or pull-down
@@ -211,16 +255,8 @@ void GPIO_board_config(void){
     GPIO_Config(GPIOC,GPIO_Init);
   }
 
-  /* PA0: entrada de la senal a medir (TIM5_CH1) */
-  GPIO_Init.Pin = INPUT_PIN;
-  GPIO_Init.Mode = 2; // Alternate function mode
-  GPIO_Init.Pull = 2; // Pull-down: si no hay senal la entrada queda en 0
-  GPIO_Init.Speed = 3;
-  GPIO_Init.Alternate = 2; // Set alternate function to AF2 (TIM5_CH1)
-  GPIO_Config(GPIOA,GPIO_Init);
-
 #if SELF_TEST
-  /* PA5: salida PWM de prueba (TIM2_CH1) */
+  /* PA5: salida PWM de prueba (TIM2_CH1). Va ANTES que PA0 (pin mayor primero) */
   GPIO_Init.Pin = PWM_TEST_PIN;
   GPIO_Init.Mode = 2; // Alternate function mode
   GPIO_Init.Pull = 0; // No pull-up or pull-down
@@ -228,6 +264,14 @@ void GPIO_board_config(void){
   GPIO_Init.Alternate = 1; // Set alternate function to AF1 (TIM2_CH1)
   GPIO_Config(GPIOA,GPIO_Init);
 #endif
+
+  /* PA0: entrada de la senal a medir (TIM5_CH1) */
+  GPIO_Init.Pin = INPUT_PIN;
+  GPIO_Init.Mode = 2; // Alternate function mode
+  GPIO_Init.Pull = 2; // Pull-down: si no hay senal la entrada queda en 0
+  GPIO_Init.Speed = 3;
+  GPIO_Init.Alternate = 2; // Set alternate function to AF2 (TIM5_CH1)
+  GPIO_Config(GPIOA,GPIO_Init);
 }
 
 /* --------------------------------- main ---------------------------------- */
@@ -236,7 +280,7 @@ int main()
   uint64_t sum;
   uint32_t count;
 
-  clock_config();
+  clock_config_HSE();   // 84 MHz desde el reloj de 8 MHz del ST-LINK (respaldo: HSI)
   GPIO_board_config();
 
   timers.sw_tmr1_period = 1;                  // no se usa (el refresco se hace en el SysTick_Handler)
