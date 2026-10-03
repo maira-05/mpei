@@ -10,7 +10,7 @@
  *    PC0..PC7  -> segmentos a,b,c,d,e,f,g,dp  (con resistencia de 220-330 ohm c/u)
  *    PC8..PC12 -> digitos (PC8 = decenas de mil ... PC12 = unidades)
  *    PA0       -> senal de entrada (0 - 3.3 V)
- *    PA5       -> (opcional) PWM de prueba de 10 kHz, puentear PA5 -> PA0
+ *    PA5       -> (opcional) PWM de prueba de 10 kHz, puentear PA5 -> PA0 digito
  */
 #include <stdint.h>
 #include <stdlib.h>
@@ -57,7 +57,7 @@ static const uint8_t seg_table[11] = {
   0x07, // 7
   0x7F, // 8
   0x6F, // 9
-  0x00  // apagado
+  0x00  // 10 apagado
 };
 
 /* ------------------------------- Variables ------------------------------- */
@@ -73,11 +73,11 @@ uint32_t freq = 0;                   // Frecuencia medida en Hz
 /* ------------------------------- Display --------------------------------- */
 /* Enciende un solo digito por llamada (multiplexacion). Se llama cada 1 ms. */
 void Display_Refresh(void){
-  static uint32_t current = 0;
+  static uint32_t digito = 0;
   uint32_t odr, seg, dig;
 
-  seg = seg_table[display_buf[current]];
-  dig = (1UL << current);
+  seg = seg_table[display_buf[digito]];
+  dig = (1UL << digito);
 #if SEG_ACTIVE_LOW
   seg = (~seg) & 0xFF;
 #endif
@@ -94,8 +94,8 @@ void Display_Refresh(void){
   odr |= (seg << SEG_FIRST_PIN) | (dig << DIG_FIRST_PIN);
   WRITE_REG(GPIOC->ODR, odr);                     // 2) pone los segmentos y enciende el digito actual
 
-  current++;
-  if(current >= NUM_DIGITS) current = 0;
+  digito++;
+  if(digito >= NUM_DIGITS) digito = 0;
 }
 
 /* Convierte el numero a digitos BCD y apaga los ceros a la izquierda */
@@ -128,7 +128,7 @@ void SysTick_Handler(void){
 
 /* Se ejecuta en cada flanco de subida de la entrada: CCR1 contiene el numero de
    ticks transcurridos desde el flanco anterior (= periodo), porque el contador
-   se reinicia en cada flanco (Reset mode)                                      */
+   se reinicia en cada flanco (Reset mode)                                     */
 void TIM5_IRQHandler(void){
   if(TIM5->SR&TIM_SR_CC1IF){
     period_sum += TIM5->CCR1;                    // Leer CCR1 tambien limpia la bandera CC1IF
