@@ -10,7 +10,6 @@
  *    PC0..PC7  -> segmentos a,b,c,d,e,f,g,dp  (con resistencia de 220-330 ohm c/u)
  *    PC8..PC12 -> digitos (PC8 = decenas de mil ... PC12 = unidades)
  *    PA0       -> senal de entrada (0 - 3.3 V)
- *    PA5       -> (opcional) PWM de prueba de 10 kHz, puentear PA5 -> PA0 digito
  */
 #include <stdint.h>
 #include <stdlib.h>
@@ -25,15 +24,11 @@
 #define SEG_FIRST_PIN     0         // PC0..PC7  = a,b,c,d,e,f,g,dp
 #define DIG_FIRST_PIN     8         // PC8..PC12 = digito 0 (izquierda) ... digito 4 (derecha)
 
-/* 5461BS-1 es de ANODO COMUN: el segmento enciende con 0 en el catodo */
-#define SEG_ACTIVE_LOW    1
-/* 1 = digitos manejados con transistor PNP (el digito enciende con 0 en la base)
-   0 = pin del digito conectado directo al anodo comun (enciende con 1)          */
-#define DIG_ACTIVE_LOW    0
+/* 5461BS-1 es de ANODO COMUN:
+   - el segmento enciende con 0 (catodo)
+   - el digito enciende con 1 (anodo conectado directo al pin)  */
 
 #define INPUT_PIN         0         // PA0 -> TIM5_CH1 (AF2)
-#define PWM_TEST_PIN      5         // PA5 -> TIM2_CH1 (AF1), senal de prueba
-#define SELF_TEST         1         // 1 = genera 10 kHz en PA5 para probar sin generador
 
 /* APB1 = 42 MHz, pero como el prescaler de APB1 es /2 (distinto de 1) el reloj
    que llega a los timers es 2 x PCLK1 = 84 MHz                                  */
@@ -57,7 +52,7 @@ static const uint8_t seg_table[11] = {
   0x07, // 7
   0x7F, // 8
   0x6F, // 9
-  0x00  // 10 apagado
+  0x00  // apagado
 };
 
 /* ------------------------------- Variables ------------------------------- */
@@ -73,29 +68,20 @@ uint32_t freq = 0;                   // Frecuencia medida en Hz
 /* ------------------------------- Display --------------------------------- */
 /* Enciende un solo digito por llamada (multiplexacion). Se llama cada 1 ms. */
 void Display_Refresh(void){
-  static uint32_t digito = 0;
+  static uint32_t digitos = 0;
   uint32_t odr, seg, dig;
 
-  seg = seg_table[display_buf[digito]];
-  dig = (1UL << digito);
-#if SEG_ACTIVE_LOW
-  seg = (~seg) & 0xFF;
-#endif
-#if DIG_ACTIVE_LOW
-  dig = (~dig) & ((1UL << NUM_DIGITS) - 1UL);
-#endif
+  seg = seg_table[display_buf[digitos]];          // patron del numero (1 = segmento encendido)
+  seg = (~seg) & 0xFF;                            // anodo comun: el segmento enciende con 0
+  dig = (1UL << digitos);                         // el digito actual enciende con 1
 
-  odr = GPIOC->ODR & ~(SEG_MASK | DIG_MASK);
-#if DIG_ACTIVE_LOW
-  WRITE_REG(GPIOC->ODR, GPIOC->ODR | DIG_MASK);   // 1) apaga todos los digitos (evita "fantasmas")
-#else
-  WRITE_REG(GPIOC->ODR, GPIOC->ODR & ~DIG_MASK);
-#endif
+  odr = GPIOC->ODR & ~(SEG_MASK | DIG_MASK);      // limpia los 13 bits del display
+  WRITE_REG(GPIOC->ODR, GPIOC->ODR & ~DIG_MASK);  // 1) apaga todos los digitos (evita "fantasmas")
   odr |= (seg << SEG_FIRST_PIN) | (dig << DIG_FIRST_PIN);
   WRITE_REG(GPIOC->ODR, odr);                     // 2) pone los segmentos y enciende el digito actual
 
-  digito++;
-  if(digito >= NUM_DIGITS) digito = 0;
+  digitos++;
+  if(digitos >= NUM_DIGITS) digitos = 0;
 }
 
 /* Convierte el numero a digitos BCD y apaga los ceros a la izquierda */
@@ -128,7 +114,7 @@ void SysTick_Handler(void){
 
 /* Se ejecuta en cada flanco de subida de la entrada: CCR1 contiene el numero de
    ticks transcurridos desde el flanco anterior (= periodo), porque el contador
-   se reinicia en cada flanco (Reset mode)                                     */
+   se reinicia en cada flanco (Reset mode)                                      */
 void TIM5_IRQHandler(void){
   if(TIM5->SR&TIM_SR_CC1IF){
     period_sum += TIM5->CCR1;                    // Leer CCR1 tambien limpia la bandera CC1IF
@@ -138,28 +124,6 @@ void TIM5_IRQHandler(void){
 }
 
 /* -------------------------------- Timers --------------------------------- */
-#if SELF_TEST
-/* Senal de prueba: PWM de 10 kHz, 50% en PA5 (igual al ejemplo 13) */
-void TIM2_PWM_10KHz_Init(void){
-  WRITE_REG_FIELD(RCC->APB1ENR, RCC_APB1ENR_TIM2EN, 1);
-  volatile unsigned int dummy;
-  dummy =  RCC->APB1ENR;
-  dummy =  RCC->APB1ENR;
-  (void)dummy;
-
-  WRITE_REG(TIM2->PSC, 0);                          // Sin prescaler: 84 MHz
-  WRITE_REG(TIM2->ARR, (TIM_CLK/10000)-1);          // 84 MHz / 8400 = 10 kHz
-  WRITE_REG(TIM2->CCR1, (TIM_CLK/20000));           // Duty 50%
-  WRITE_REG_FIELD(TIM2->CCMR1, TIM_CCMR1_OC1M, 6);  // Set output compare mode to PWM mode 1
-  WRITE_REG_FIELD(TIM2->CCMR1, TIM_CCMR1_OC1PE, 1); // Enable output compare preload for channel 1
-  WRITE_REG_FIELD(TIM2->CCER, TIM_CCER_CC1E, 1);    // Enable the output of channel 1
-  WRITE_REG_FIELD(TIM2->CR1, TIM_CR1_DIR, 0);       // Counter Up
-  WRITE_REG_FIELD(TIM2->CR1, TIM_CR1_ARPE, 1);      // Autoreload
-  WRITE_REG(TIM2->CNT, 0);                          // restart the counter
-  WRITE_REG_FIELD(TIM2->CR1, TIM_CR1_CEN, 1);       // Enable the timer
-}
-#endif
-
 /* TIM5 (32 bits) en Input Capture por CH1 (PA0), reiniciando el contador en cada flanco de subida */
 void TIM5_IC_Init(void){
 
@@ -239,11 +203,11 @@ void GPIO_board_config(void){
   /* OJO: la macro WRITE_REG_FIELD que usa GPIO_Config (archivo del curso) borra la
      configuracion de los pines de MENOR numero del mismo puerto cuando la mascara
      viene desplazada. Por eso en cada puerto se configura SIEMPRE del pin mayor
-     al pin menor (igual que en el ejemplo 13: primero PA5 y luego PA0).          */
+     al pin menor.                                                                */
 
   /* Estado inicial: todo apagado antes de poner los pines como salida */
   GPIO_clock_enable(GPIOC);
-  WRITE_REG(GPIOC->ODR, (SEG_ACTIVE_LOW ? SEG_MASK : 0) | (DIG_ACTIVE_LOW ? DIG_MASK : 0));
+  WRITE_REG(GPIOC->ODR, SEG_MASK);   // segmentos en 1 (apagados) y digitos en 0 (apagados)
 
   /* PC12..PC8 digitos y PC7..PC0 segmentos: salidas push-pull (orden descendente) */
   for(pin = DIG_FIRST_PIN + NUM_DIGITS - 1; pin >= SEG_FIRST_PIN; pin--){
@@ -254,16 +218,6 @@ void GPIO_board_config(void){
     GPIO_Init.Alternate = 0;
     GPIO_Config(GPIOC,GPIO_Init);
   }
-
-#if SELF_TEST
-  /* PA5: salida PWM de prueba (TIM2_CH1). Va ANTES que PA0 (pin mayor primero) */
-  GPIO_Init.Pin = PWM_TEST_PIN;
-  GPIO_Init.Mode = 2; // Alternate function mode
-  GPIO_Init.Pull = 0; // No pull-up or pull-down
-  GPIO_Init.Speed = 3;
-  GPIO_Init.Alternate = 1; // Set alternate function to AF1 (TIM2_CH1)
-  GPIO_Config(GPIOA,GPIO_Init);
-#endif
 
   /* PA0: entrada de la senal a medir (TIM5_CH1) */
   GPIO_Init.Pin = INPUT_PIN;
@@ -289,9 +243,6 @@ int main()
   SysTick_Init(1000);     // SysTick cada 1 ms
   SysTick_enable_IrQ(1);
 
-#if SELF_TEST
-  TIM2_PWM_10KHz_Init();
-#endif
   TIM5_IC_Init();
 
   while(1)
