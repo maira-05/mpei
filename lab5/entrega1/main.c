@@ -13,7 +13,7 @@
 #define SEG_FIRST_PIN     0         // PC0..PC7  = a,b,c,d,e,f,g,dp
 #define DIG_FIRST_PIN     8         // PC8..PC12 = digito 0 (izquierda) ... digito 4 (derecha)
 
-#define INPUT_PIN         0         // PA0 
+#define INPUT_PIN         1         // PA1 
 
 /* APB1 = 42 MHz, pero como el prescaler de APB1 es /2 (distinto de 1) el reloj
    que llega a los timers es 2 x PCLK1 = 84 MHz     -------------------                             */
@@ -96,9 +96,9 @@ void SysTick_Handler(void){
                                      
 void TIM5_IRQHandler(void){ //funcion que se ejecuta cada vez que hay un flanco de subida en la señal de entrada
   if(TIM5->SR&TIM_SR_CC1IF){ //verifica si la bandera de interrupcion esta activa
-    period_sum += TIM5->CCR1; // Leer CCR1 tambien limpia la bandera CC1IF
+    period_sum += TIM5->CCR2; // Leer CCR1 tambien limpia la bandera CC1IF
     period_count++;
-    WRITE_REG_FIELD(TIM5->SR, TIM_SR_CC1IF, 0); // Clear the interrupt flag
+    WRITE_REG_FIELD(TIM5->SR, TIM_SR_CC2IF, 0); // Clear the interrupt flag
   }
 }
 
@@ -114,20 +114,20 @@ void TIM5_IC_Init(void){
   WRITE_REG(TIM5->PSC, 0);                  // Sin prescaler: el contador corre a 84 MHz
   WRITE_REG(TIM5->ARR, 0xffffffff);         // maximum reload value
 
-  WRITE_REG_FIELD(TIM5->CCMR1, TIM_CCMR1_CC1S, 1);  // enable Input capture CH1 on TI1
-  WRITE_REG_FIELD(TIM5->CCMR1, TIM_CCMR1_IC1F, 3);  // Filtro digital: 8 muestras iguales (~95 ns) para rechazar ruido
-  WRITE_REG_FIELD(TIM5->CCMR1, TIM_CCMR1_IC1PSC, 0);// Captura en todos los flancos validos
-  WRITE_REG_FIELD(TIM5->CCER, TIM_CCER_CC1P, 0);    // Capture configured on rising edge
-  WRITE_REG_FIELD(TIM5->CCER, TIM_CCER_CC1NP, 0);   // Capture configured on rising edge
+  WRITE_REG_FIELD(TIM5->CCMR1, TIM_CCMR1_CC2S, 1);  // enable Input capture CH1 on TI1
+  WRITE_REG_FIELD(TIM5->CCMR1, TIM_CCMR1_IC2F, 3);  // Filtro digital: 8 muestras iguales (~95 ns) para rechazar ruido
+  WRITE_REG_FIELD(TIM5->CCMR1, TIM_CCMR1_IC2PSC, 0);// Captura en todos los flancos validos
+  WRITE_REG_FIELD(TIM5->CCER, TIM_CCER_CC2P, 0);    // Capture configured on rising edge
+  WRITE_REG_FIELD(TIM5->CCER, TIM_CCER_CC2NP, 0);   // Capture configured on rising edge
 
-  WRITE_REG_FIELD(TIM5->SMCR, TIM_SMCR_TS, 5);      // TI1FP1 selected
+  WRITE_REG_FIELD(TIM5->SMCR, TIM_SMCR_TS, 6);      // TI1FP1 selected
   WRITE_REG_FIELD(TIM5->SMCR, TIM_SMCR_SMS, 4);     // Reset the Timer on every rising capture event
 
   WRITE_REG_FIELD(TIM5->CR1, TIM_CR1_DIR, 0);       // Counter Up
   WRITE_REG_FIELD(TIM5->CR1, TIM_CR1_ARPE, 1);      // Autoreload
 
-  WRITE_REG_FIELD(TIM5->CCER, TIM_CCER_CC1E, 1);    // Enable capture CC1
-  WRITE_REG_FIELD(TIM5->DIER, TIM_DIER_CC1IE, 1);   // Enable CC1 interrupt (only on rising edge)
+  WRITE_REG_FIELD(TIM5->CCER, TIM_CCER_CC2E, 1);    // Enable capture CC1
+  WRITE_REG_FIELD(TIM5->DIER, TIM_DIER_CC2IE, 1);   // Enable CC1 interrupt (only on rising edge)
   WRITE_REG_FIELD(TIM5->CR1, TIM_CR1_CEN, 1);       // Enable the timer
 
   NVIC_SetPriority(TIM5_IRQn, 0);                   // La captura tiene la mayor prioridad
@@ -201,7 +201,7 @@ int main()
   clock_config_HSE();   // 84 MHz desde el reloj de 8 MHz del ST-LINK (respaldo: HSI)
   GPIO_board_config();
 
-//  timers.sw_tmr1_period = 1; 
+  timers.sw_tmr1_period = 1; 
   timers.sw_tmr2_period = DISPLAY_UPDATE_MS;  // conteo de 250ms 
 
   SysTick_Init(1000);     // SysTick cada 1 ms
