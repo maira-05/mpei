@@ -5,3 +5,7 @@
 [submodule "5-ARM-Boards/STM32-Black-Pill/STM32utils"]
 	path = 5-ARM-Boards/STM32-Black-Pill/STM32utils
 	url = https://github.com/STMicroelectronics/STM32CubeF4.git
+
+[submodule "5-ARM-Boards/RPI-pico2/CMSIS_6"]
+	path = 5-ARM-Boards/RPI-pico2/CMSIS_6
+	url = https://github.com/ARM-software/CMSIS_6.git
