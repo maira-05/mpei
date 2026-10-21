@@ -1,31 +1,9 @@
 /* =====================================================================
  * crt0.S - Codigo de arranque (startup) - Reproductor WAV (MPEI 2026)
  * Microcontrolador: STM32F401RET6 (NUCLEO-F401RE)
- *
- * Adaptado de startup_stm32f401xe.s (STMicroelectronics, (c) 2017),
- * usado en el repositorio del curso (Comp-Arch-Emb-Sys / NUCLEO-64 /
- * 18-SPI-1). Licencia de ST: se distribuye "AS-IS".
- *
- * Cambios respecto al original:
- *  - Comentarios en espanol con referencias a la documentacion.
- *  - SystemInit es "weak": si el programa no la define, se usa una
- *    version vacia y el enlace no falla.
- *  - Si main() retorna, el procesador queda en un ciclo infinito en vez
- *    de saltar a una direccion indefinida (bx lr).
- *
- * Que hace este archivo:
- *  1. Define la tabla de vectores (seccion .isr_vector), que el linker
- *     script ubica al inicio de la FLASH (0x08000000).
- *  2. Define el Reset_Handler: inicializa la pila, copia .data de FLASH
- *     a RAM, llena .bss de ceros y llama a main().
- *  3. Define handlers "weak" para todas las interrupciones.
- *
- * Referencias:
- *  - PM0214 Programming manual Cortex-M4: "Vector table", "Exception model"
- *  - RM0368 Reference manual: tabla de vectores del NVIC (cap. 10)
  * ===================================================================== */
 
-  .syntax unified      /* sintaxis unificada ARM/Thumb del ensamblador GNU */
+  .syntax unified      /* sintaxis unificada ARM/Thumb del ensamblad-or GNU */
   .cpu cortex-m4       /* procesador destino */
   .fpu softvfp         /* sin unidad de punto flotante por hardware */
   .thumb               /* el Cortex-M solo ejecuta instrucciones Thumb */
