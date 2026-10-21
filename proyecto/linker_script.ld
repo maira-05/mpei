@@ -12,21 +12,20 @@ SECTIONS
 {
     .text :
     {
-        KEEP(*(.isr_vector))
-        *(.text*)
+        KEEP(*(.isr_vector))   /* tabla de vectores (definida en crt0.S) */
+        *(.text*)              /* codigo de todas las funciones */
         . = ALIGN(4);
     } > FLASH
-
     .rodata :
     {
-        *(.rodata*)
+        *(.rodata*)            /* constantes */
         . = ALIGN(4);
-        KEEP(*(.init))
-        KEEP(*(.fini))
-        *(.eh_frame)
-        *(.ARM.exidx*)
+        KEEP(*(.init))         /* codigo de inicializacion de libc */
+        KEEP(*(.fini))         /* codigo de finalizacion de libc */
+        *(.eh_frame)           /* informacion para desenrollar la pila */
+        *(.ARM.exidx*)         /* tabla de excepciones de ARM */
         . = ALIGN(4);
-        _etext = .;
+        _etext = .;            /* fin de lo que esta solo en FLASH */
     } > FLASH
 
     _sidata = LOADADDR(.data);
@@ -34,25 +33,25 @@ SECTIONS
     .data :
     {
         . = ALIGN(4);
-        _sdata = .;
+        _sdata = .;            /* inicio de .data en RAM */
         *(.data*)
-        KEEP(*(.init_array))
-        KEEP(*(.fini_array))
-        . = ALIGN(4);
-        _edata = .;
+        KEEP(*(.init_array))   /* constructores que llama libc */
+        KEEP(*(.fini_array))   /* destructores que llama libc */
+        . = ALIGN(4);          /* crt0.S copia de a 4 bytes */
+        _edata = .;            /* fin de .data en RAM */
     } > RAM AT> FLASH
 
     .bss (NOLOAD) :
     {
         . = ALIGN(4);
-        _sbss = .;
-        __bss_start__ = _sbss;
+        _sbss = .;             /* inicio de .bss */
+        __bss_start__ = _sbss; /* mismo simbolo con el nombre que usa libc */
         *(.bss*)
         *(COMMON)
         . = ALIGN(4);
-        _ebss = .;
+        _ebss = .;             /* fin de .bss */
         __bss_end__ = _ebss;
-        end = .;
+        end = .;               /* inicio del heap (lo usa malloc de libc) */
     } > RAM
 
     _estack = ORIGIN(RAM) + LENGTH(RAM);
