@@ -3,6 +3,7 @@
 #include "gpio.h"
 #include "system.h"
 #include "stm32f4xx.h"
+#include "uart.h"
 
 /* Seleccionar la tarjeta: CS en bajo + un byte de "relleno" */
 static void sd_seleccionar(void)
@@ -40,23 +41,24 @@ static uint8_t sd_comando(uint8_t cmd, uint32_t arg, uint8_t crc) /*arg de 32 bi
 
 uint8_t sd_init(void)
 {
-    /* 1. CS como salida, empezando en alto (tarjeta sin seleccionar) */
     GPIO_InitTypeDef cs = {GPIO_MODO_SALIDA, SD_CS, GPIO_SIN_PULL, GPIO_ALTA_VELOCIDAD, 0};
     GPIO_Config(GPIOB, cs);
-    escribir_pin_state(GPIOB, SD_CS, 1); /* tarjeta sin seleccionar */
+    escribir_pin_state(GPIOB, SD_CS, 1);
+    uart_enviar_texto("A: CS listo\r\n");
 
-    /* 2. SPI1 lento (328 kHz) */
     spi1_init();
+    uart_enviar_texto("B: SPI1 listo\r\n");
+
     delay_ms(10);
+    uart_enviar_texto("C: delay listo\r\n");
 
-    /* 3. Al menos 74 ciclos de reloj con CS en alto para "despertar" la tarjeta.
-          Cada byte son 8 ciclos -> ¿cuántos bytes 0xFF hay que enviar? */
-    for (int i = 0; i < 10; i++) spi1_transferir(0xFF); /* 10 bytes = 80 ciclos */
+    for (int i = 0; i < 10; i++) spi1_transferir(0xFF);
+    uart_enviar_texto("D: 80 ciclos enviados\r\n");
 
-    /* 4. CMD0: GO_IDLE_STATE, argumento 0, CRC 0x95 */
     sd_seleccionar();
     uint8_t r = sd_comando(0, 0, 0x95);
     sd_soltar();
+    uart_enviar_texto("E: CMD0 enviado\r\n");
 
-    return r;   /* 0x01 = la tarjeta entró en modo SPI */
+    return r;
 }

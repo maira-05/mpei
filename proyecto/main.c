@@ -4,12 +4,12 @@
 #include "system.h"
 #include "tft.h"
 #include "uart.h"
+#include "sd.h"                        // NUEVO
 
 #define BOTON_PIN 13    // PC13: boton azul B1 de la Nucleo (da 0 al presionarlo)
 
 int main(void)
 {
-    
     // Configuracion del boton
     GPIO_InitTypeDef boton = {GPIO_MODO_ENTRADA, BOTON_PIN, GPIO_SIN_PULL, GPIO_BAJA_VELOCIDAD, 0};
     GPIO_Config(GPIOC, boton);
@@ -23,6 +23,12 @@ int main(void)
     uart_enviar_texto("Hola desde la Nucleo\r\n");
     uart_numero(22050);       uart_enviar_texto("\r\n");
     uart_hexadecimal(0x55AA); uart_enviar_texto("\r\n");
+
+    // NUEVO: prueba de la microSD (primer comando, CMD0)
+    uint8_t r = sd_init();
+    uart_enviar_texto("CMD0: ");
+    uart_hexadecimal(r);
+    uart_enviar_texto("\r\n");
 
     uint32_t encendido = 0;   // 0 = pantalla apagada, 1 = encendida
     uint32_t anterior  = 1;   // 1 = boton suelto
@@ -41,7 +47,6 @@ int main(void)
                 tft_encender();
                 encendido = 1;
                 uart_enviar_texto("Pantalla encendida\r\n");
-                
             }
             delay_ms(50);                   // antirrebote
         }
