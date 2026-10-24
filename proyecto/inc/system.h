@@ -3,5 +3,6 @@
 #include <stdint.h>
 
 void delay_ms(uint32_t ms);     /* espera ms milisegundos (SysTick, reloj 16 MHz) */
+void SystemInit(void);          /* inicializa el sistema (PLL, reloj, etc.) */
 
 #endif
