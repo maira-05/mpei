@@ -450,3 +450,5 @@ g_pfnVectors:
 
    .weak      SPI4_IRQHandler
    .thumb_set SPI4_IRQHandler,Default_Handler
+   .weak      _init
+   .thumb_set _init,SystemInit_Default

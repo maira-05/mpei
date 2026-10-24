@@ -1,0 +1,15 @@
+PRUEBA DE AUDIO - reproducir un fragmento de cancion (sin microSD)
+
+Ya trae una melodia de ejemplo en src/cancion.c, asi que pueden probar
+de una vez:   make   y   make flash
+
+Para poner una cancion de ustedes:
+ 1. Copien el archivo .wav a esta carpeta (ej: CANCION1.WAV).
+ 2. En una terminal, dentro de esta carpeta:
+        python wav_a_c.py CANCION1.WAV          (primeros 18 s)
+        python wav_a_c.py CANCION1.WAV 30       (desde el segundo 30)
+    Esto reemplaza src/cancion.c.
+ 3. make clean   ->   make   ->   make flash
+
+Limite: 18 segundos (lo que cabe en la FLASH de 512 KB a 22050 Hz, 8 bits).
+Conexiones: PA0 -> 1k -> (10 nF a GND) -> potenciometro -> R del GF1002.
