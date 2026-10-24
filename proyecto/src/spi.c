@@ -2,6 +2,40 @@
 #include "gpio.h"
 #include "stm32f4xx.h"
 
+void spi1_init(void)
+{
+    RCC->APB2ENR |= RCC_APB2ENR_SPI1EN_Msk; // Habilitar reloj para SPI1
+
+    GPIO_InitTypeDef pin = {GPIO_MODO_AF, 3, GPIO_SIN_PULL, GPIO_ALTA_VELOCIDAD, 5};
+    GPIO_Config(GPIOB, pin); // Configurar PB3 (SCK)
+    pin.Pin = 5;
+    GPIO_Config(GPIOB, pin); // Configurar PB5 (MOSI)
+    pin.Pin= 4;
+    pin.Pull= GPIO_PULL_UP;
+    GPIO_Config(GPIOB, pin); // Configurar PB6 (MISO)
+
+    SPI1->CR1 = SPI_CR1_MSTR | SPI_CR1_SSM | SPI_CR1_SSI; // Configurar SPI1 como maestro, modo 3, 8 bits
+    SPI1->CR1 |= (7U << SPI_CR1_BR_Pos); // Configurar la velocidad del reloj (prescaler)
+    SPI1->CR1 |= SPI_CR1_SPE; // Habilitar SPI1
+}
+
+uint8_t spi1_transferir(uint8_t dato)
+{
+    while (!(SPI1->SR & SPI_SR_TXE)); // Esperar hasta que el buffer de transmisión esté vacío
+    SPI1->DR = dato; // Enviar el dato
+    while (!(SPI1->SR & SPI_SR_RXNE)); // Esperar hasta que haya datos recibidos
+    return (uint8_t)SPI1->DR; // Leer el dato recibido (descartar)
+}
+
+void spi1_velocidad(uint32_t br)
+{
+    while (SPI1->SR & SPI_SR_BSY);          
+    SPI1->CR1 &= ~SPI_CR1_SPE;              
+    SPI1->CR1 &= ~SPI_CR1_BR_Msk;           
+    SPI1->CR1 |= (br << SPI_CR1_BR_Pos);   
+    SPI1->CR1 |= SPI_CR1_SPE;
+}
+
 void spi2_init(void)
 {
     // Configuración de pines PB13 (SCK), PB14 (MISO), PB15 (MOSI)
