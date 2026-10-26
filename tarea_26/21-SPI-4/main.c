@@ -123,7 +123,7 @@ int main()
   point.x = 3,
   point.y = 3;
 
-  draw_point(data,point);
+  draw_square(data,point);
  uint8_t direction = 'w';
   while(1)
   {
@@ -160,6 +160,4 @@ int main()
       draw_point(data,point);
     }
   }
-
-
 }
