@@ -84,6 +84,17 @@ void draw_point(uint8_t * Matrix, pointd point){
   max7219_print(Matrix);
 }
 
+void draw_square(uint8_t * Matrix, pointd point){
+  for(uint8_t i=0; i<8; i++){
+    Matrix[i] = 0;
+    if(point.y == i || point.y+1 == i){
+      Matrix[i] |= (1<<point.x);
+      Matrix[i] |= (1<<(point.x+1));
+    }
+  }
+  max7219_print(Matrix);
+}
+
 int main()
 {
 
