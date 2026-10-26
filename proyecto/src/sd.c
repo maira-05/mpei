@@ -55,10 +55,14 @@ uint8_t sd_init(void)
     for (int i = 0; i < 10; i++) spi1_transferir(0xFF);
     uart_enviar_texto("D: 80 ciclos enviados\r\n");
 
-    sd_seleccionar();
-    uint8_t r = sd_comando(0, 0, 0x95);
-    sd_soltar();
-    uart_enviar_texto("E: CMD0 enviado\r\n");
+    uint8_t r = 0xFF;
+    for (int intento = 0; intento < 10 && r != 0x01; intento++)
+    {
+        sd_seleccionar();
+        r = sd_comando(0, 0, 0x95);
+        sd_soltar();
+        delay_ms(10);
+    }
 
     return r;
 }
