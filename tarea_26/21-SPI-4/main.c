@@ -87,12 +87,48 @@ void draw_point(uint8_t * Matrix, pointd point){
 void draw_square(uint8_t * Matrix, pointd point){
   for(uint8_t i=0; i<8; i++){
     Matrix[i] = 0;
-    if(point.y == i || point.y+1 == i){
+    if(point.y == i || point.y+1 == i || point.y-1 == i){
       Matrix[i] |= (1<<point.x);
       Matrix[i] |= (1<<(point.x+1));
+      Matrix[i] |= (1<<(point.x-1));
     }
   }
   max7219_print(Matrix);
+}
+
+void draw_circle(uint8_t * Matrix, pointd point){ // Dibuja un círculo alrededor de un radio dado
+  for(uint8_t i=0; i<8; i++){
+    Matrix[i] = 0;
+    if(point.y == i || point.y+1 == i || point.y-1 == i){
+      Matrix[i] |= (1<<point.x);
+      Matrix[i] |= (1<<(point.x+1));
+      Matrix[i] |= (1<<(point.x-1));
+    }
+    if(point.y+2 == i || point.y-2 == i){
+      Matrix[i] |= (1<<point.x);
+    }
+    if (point.y == i )
+    {
+      /* code */
+    }
+    
+  }
+  max7219_print(Matrix); 
+}
+
+void draw_triangle(uint8_t * Matrix, pointd point){ // Dibuja un triángulo alrededor de un radio dado
+  for(uint8_t i=0; i<8; i++){
+    Matrix[i] = 0;
+    if(point.y == i || point.y+1 == i || point.y-1 == i){
+      Matrix[i] |= (1<<point.x);
+      Matrix[i] |= (1<<(point.x+1));
+      Matrix[i] |= (1<<(point.x-1));
+    }
+    if(point.y+2 == i || point.y-2 == i){
+      Matrix[i] |= (1<<point.x);
+    }
+  }
+  max7219_print(Matrix); 
 }
 
 int main()
@@ -120,11 +156,26 @@ int main()
 
   uint8_t idx=0;
   uint8_t p_message[20];
-  point.x = 3,
-  point.y = 3;
+  char figure[20]; // 20 porque es el tamaño del buffer de entrada
+  printf("Ingrese las coordenadas del punto (x y): ");
+  scanf("%hhu %hhu", &point.x, &point.y);
+  printf("Coordenadas ingresadas: x=%d, y=%d\n", point.x, point.y);
+  printf("Que figura desea dibujar? (punto, cuadrado, circulo): ");
+  scanf("%s", figure);
+  if(strcmp(figure, "punto") == 0){
+    draw_point(data,point);
+  } else if(strcmp(figure, "cuadrado") == 0){
+    draw_square(data,point);
+  } else if(strcmp(figure, "circulo") == 0){
+    draw_circle(data,point);
+  } else {
+    printf("Figura no reconocida. Se dibujara un punto por defecto.\n");
+    draw_point(data,point);
+  }
+
 
   draw_square(data,point);
- uint8_t direction = 'w';
+  uint8_t direction = 'w';
   while(1)
   {
     if(timers.sw_tmr1_flag){
