@@ -100,17 +100,23 @@ void draw_circle(uint8_t * Matrix, pointd point){ // Dibuja un círculo alrededo
   for(uint8_t i=0; i<8; i++){
     Matrix[i] = 0;
     if(point.y == i || point.y+1 == i || point.y-1 == i){
-      Matrix[i] |= (1<<point.x);
-      Matrix[i] |= (1<<(point.x+1));
-      Matrix[i] |= (1<<(point.x-1));
+      Matrix[i] |= (1<<point.x);// Dibuja el punto central
+      Matrix[i] |= (1<<(point.x+1));// Dibuja el punto a la derecha
+      Matrix[i] |= (1<<(point.x-1));// Dibuja el punto a la izquierda
     }
     if(point.y+2 == i || point.y-2 == i){
-      Matrix[i] |= (1<<point.x);
+      Matrix[i] |= (1<<point.x);// Dibuja el punto superior e inferior
     }
-    if (point.y == i )
+    if (point.y == i )// Dibuja los puntos diagonales
     {
-      /* code */
+      if (point.x+1 < 8) {
+        Matrix[i] |= (1<<(point.x+1));// Dibuja el punto a la derecha
+      }
+      if (point.x-1 >= 0) {
+        Matrix[i] |= (1<<(point.x-1)); // Dibuja el punto a la izquierda
+      }
     }
+    
     
   }
   max7219_print(Matrix); 
