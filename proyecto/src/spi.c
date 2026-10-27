@@ -6,17 +6,17 @@ void spi1_init(void)
 {
     RCC->APB2ENR |= RCC_APB2ENR_SPI1EN_Msk; // Habilitar reloj para SPI1
 
-    GPIO_InitTypeDef pin = {GPIO_MODO_AF, 3, GPIO_SIN_PULL, GPIO_BAJA_VELOCIDAD, 5};
-    GPIO_Config(GPIOB, pin); // Configurar PB3 (SCK)
-    pin.Pin = 5;
-    GPIO_Config(GPIOB, pin); // Configurar PB5 (MOSI)
-    pin.Pin= 4;
-    pin.Pull= GPIO_PULL_UP;
-    GPIO_Config(GPIOB, pin); // Configurar PB6 (MISO)
+    GPIO_InitTypeDef pin = {GPIO_MODO_AF, 5, GPIO_SIN_PULL, GPIO_BAJA_VELOCIDAD, 5};
+    GPIO_Config(GPIOA, pin); // PA5 (SCK)  = D13
+    pin.Pin = 7;
+    GPIO_Config(GPIOA, pin); // PA7 (MOSI) = D11
+    pin.Pin = 6;
+    pin.Pull = GPIO_PULL_UP;
+    GPIO_Config(GPIOA, pin); // PA6 (MISO) = D12, con pull-up
 
-    SPI1->CR1 = SPI_CR1_MSTR | SPI_CR1_SSM | SPI_CR1_SSI; // Configurar SPI1 como maestro, modo 3, 8 bits
-    SPI1->CR1 |= (7U << SPI_CR1_BR_Pos); // Configurar la velocidad del reloj (prescaler)
-    SPI1->CR1 |= SPI_CR1_SPE; // Habilitar SPI1
+    SPI1->CR1 = SPI_CR1_MSTR | SPI_CR1_SSM | SPI_CR1_SSI; // maestro, modo 0, CS por software
+    SPI1->CR1 |= (7U << SPI_CR1_BR_Pos);                  // 328 kHz para iniciar la SD
+    SPI1->CR1 |= SPI_CR1_SPE;                             // Habilitar SPI1
 }
 
 uint8_t spi1_transferir(uint8_t dato)
