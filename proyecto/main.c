@@ -4,53 +4,38 @@
 #include "system.h"
 #include "tft.h"
 #include "uart.h"
-#include "sd.h"                        // NUEVO
+#include "sd.h"
 
 #define BOTON_PIN 13    // PC13: boton azul B1 de la Nucleo (da 0 al presionarlo)
 
 int main(void)
 {
-    // Configuracion del boton
-    GPIO_InitTypeDef boton = {GPIO_MODO_ENTRADA, BOTON_PIN, GPIO_SIN_PULL, GPIO_BAJA_VELOCIDAD, 0};
-    GPIO_Config(GPIOC, boton);
-
-    // Iniciar la pantalla, pintarla y dejarla apagada
-    tft_init();
-    tft_llenar(TFT_AZUL);     // color que se vera al encender
-    tft_apagar();
-
+    // UART para ver mensajes en el PC
     uart_init(115200);
-    uart_enviar_texto("Hola desde la Nucleo\r\n");
-    uart_numero(22050);       uart_enviar_texto("\r\n");
-    uart_hexadecimal(0x55AA); uart_enviar_texto("\r\n");
+    uart_enviar_texto("Prueba de pines del modulo SD\r\n");
 
-    // NUEVO: prueba de la microSD (primer comando, CMD0)
-    uint8_t r = sd_init();
-    uart_enviar_texto("CMD0: ");
-    uart_hexadecimal(r);
-    uart_enviar_texto("\r\n");
-
-    uint32_t encendido = 0;   // 0 = pantalla apagada, 1 = encendida
-    uint32_t anterior  = 1;   // 1 = boton suelto
+    // ===== PRUEBA TEMPORAL: pines del SPI1 fijos (sin SPI) =====
+    // PB3 (SCK), PB5 (MOSI) y PB6 (CS) como salidas normales.
+    // Cada 5 segundos cambian entre ALTO (3.3 V) y BAJO (0 V).
+    GPIO_InitTypeDef p = {GPIO_MODO_SALIDA, 3, GPIO_SIN_PULL, GPIO_BAJA_VELOCIDAD, 0};
+    GPIO_Config(GPIOB, p);              // PB3 (SCK)
+    p.Pin = 5;
+    GPIO_Config(GPIOB, p);              // PB5 (MOSI)
+    p.Pin = 6;
+    GPIO_Config(GPIOB, p);              // PB6 (CS)
 
     while (1)
     {
-        uint32_t actual = leer_pin_state(GPIOC, BOTON_PIN);
-        //función para prender y apagar la pantalla al presionar el botón azul B1 de la placa Nucleo
-        if (anterior == 1 && actual == 0)   // se acaba de presionar
-        {
-            if (encendido == 1) {
-                tft_apagar();
-                encendido = 0;
-                uart_enviar_texto("Pantalla apagada\r\n");
-            } else {
-                tft_encender();
-                encendido = 1;
-                uart_enviar_texto("Pantalla encendida\r\n");
-            }
-            delay_ms(50);                   // antirrebote
-        }
+        escribir_pin_state(GPIOB, 3, 1);
+        escribir_pin_state(GPIOB, 5, 1);
+        escribir_pin_state(GPIOB, 6, 1);
+        uart_enviar_texto("ALTO: SCK, MOSI y CS en 3.3 V\r\n");
+        delay_ms(5000);
 
-        anterior = actual;                  // recordar para la proxima vuelta
+        escribir_pin_state(GPIOB, 3, 0);
+        escribir_pin_state(GPIOB, 5, 0);
+        escribir_pin_state(GPIOB, 6, 0);
+        uart_enviar_texto("BAJO: SCK, MOSI y CS en 0 V\r\n");
+        delay_ms(5000);
     }
 }
