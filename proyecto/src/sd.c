@@ -78,6 +78,7 @@ uint8_t sd_init(void)
     }
     uart_enviar_texto("CMD0:   "); uart_hexadecimal(r);
     uart_enviar_texto("  (intento "); uart_numero(intentos_cmd0); uart_enviar_texto(")\r\n");
+    if (r != 0x01) return 1;   // la tarjeta no respondió al CMD0: no seguir
 
     /* ---- CMD8: ¿es una tarjeta SD v2? ---- */
     sd_seleccionar();
@@ -103,7 +104,7 @@ uint8_t sd_init(void)
     }
     uart_enviar_texto("ACMD41: "); uart_hexadecimal(r);
     uart_enviar_texto("  (intento "); uart_numero(intentos_acmd41); uart_enviar_texto(")\r\n");
-
+    if (r != 0x00) return 3;   // la tarjeta no terminó de iniciarse
     /* ---- CMD58: leer el OCR ---- */
     sd_seleccionar();
     r = sd_comando(58, 0, 0x01);
@@ -115,9 +116,8 @@ uint8_t sd_init(void)
     uart_enviar_texto("\r\n");
 
     /* ---- Subir la velocidad del SPI1 ---- */
-    spi1_velocidad(7);                      /* /16 -> 5.25 MHz */
-
-    return r;
+    spi1_velocidad(3);   // ya inicializada: subir a 5.25 MHz
+    return 0;            // 0 = tarjeta lista
 }
 
 uint8_t sd_leer_sector(uint32_t sector, uint8_t *buffer)

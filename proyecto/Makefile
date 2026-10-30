@@ -13,12 +13,15 @@ LINKERSCRIPT = linker_script.ld
 # Directorios donde buscar archivos .h
 # inc/       -> encabezados propios (gpio.h, spi.h, tft.h, system.h)
 # inc/cmsis/ -> encabezados CMSIS (nombres de registros), copiados de STM32utils
+# source/    -> es del FatsFs para que encuentre ff.h y diskio.h, que son necesarios para compilar el proyecto
 INCLUDE = -I./inc
 INCLUDE += -I./inc/cmsis
+INCLUDE += -I./source
 
 # Archivos fuente en C (carpeta principal y src/)
 C_SRC = $(wildcard *.c)
 C_SRC += $(wildcard src/*.c)
+C_SRC += $(wildcard source/*.c)
 # Archivos fuente en lenguaje de ensamblador
 ASM_SRC = $(wildcard *.S)
 
@@ -67,7 +70,7 @@ $(APPNAME).elf: $(OBJS)
 #ejecuta la limpieza de archivos generados
 .PHONY: clean
 clean:
-	rm -f *.o src/*.o *.elf *.img
+	rm -f *.o src/*.o *.elf *.img source/*.o
 
 #ejecuta la carga del programa en la placa
 .PHONY: flash
