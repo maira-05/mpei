@@ -4,12 +4,30 @@
 #include "system.h"
 #include "tft.h"
 #include "uart.h"
-#include "ff.h"                    // [1] la librería de FatFs
+#include "ff.h"                    
+#include "audio.h"
 
 #define BOTON_PIN 13    // PC13: boton azul B1 de la Nucleo (da 0 al presionarlo)
 
 static FATFS fs;                  // [2] aquí FatFs guarda los datos de la tarjeta montada
+void TIM3_IRQHandler(void)                       // el nombre debe ser EXACTO (está en crt0.S)
+{
+    static uint32_t contador = 0;
+    static uint8_t  alto = 0;
 
+    if (TIM3->SR & TIM_SR_UIF)                    // ¿fue la interrupción de update?
+    {
+        TIM3->SR &= ~TIM_SR_UIF;                  // limpiar la bandera (si no, se repite sin fin)
+
+        contador++;
+        if (contador >= 25)                       // 22050 / (2 x 25) = 441 Hz
+        {
+            contador = 0;
+            alto = !alto;
+            audio_poner_muestra(alto ? 200 : 56); // alternar entre dos niveles
+        }
+    }
+}
 int main(void)
 {
     // Configuracion del boton
@@ -79,6 +97,9 @@ int main(void)
             f_close(&archivo);                        // [14]
         }
     }
+    audio_pwm_init();
+    audio_muestreo_init(22050);
+    uart_enviar_texto("Tono de 440 Hz sonando\r\n");
 
     // ===== Lo de siempre: botón para encender/apagar la pantalla =====
     uint32_t encendido = 0;   // 0 = pantalla apagada, 1 = encendida
