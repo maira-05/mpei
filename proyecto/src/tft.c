@@ -87,3 +87,4 @@ void tft_encender(void)
     delay_ms(120);
     tft_comando(0x29); // Display on
 }
+

@@ -5,6 +5,8 @@
 #include "stm32f4xx.h"
 #include "uart.h"
 
+static uint8_t sd_es_sdhc = 0;   /* 1 = SDHC/SDXC (direccion por bloque) */
+
 /* Seleccionar la tarjeta: CS en bajo + un byte de "relleno" */
 static void sd_seleccionar(void)
 {
@@ -57,6 +59,7 @@ static void imprimir_4_bytes(uint8_t *b)
 
 uint8_t sd_init(void)
 {
+    sd_es_sdhc = 0;
     GPIO_InitTypeDef cs = {GPIO_MODO_SALIDA, SD_CS, GPIO_SIN_PULL, GPIO_ALTA_VELOCIDAD, 0};
     GPIO_Config(GPIOB, cs);
     escribir_pin_state(GPIOB, SD_CS, 1);
@@ -81,6 +84,7 @@ uint8_t sd_init(void)
     if (r != 0x01) return 1;   // la tarjeta no respondió al CMD0: no seguir
 
     /* ---- CMD8: ¿es una tarjeta SD v2? ---- */
+    uint8_t v2 = 0;
     sd_seleccionar();
     r = sd_comando(8, 0x000001AA, 0x87);
     uint8_t eco[4];
@@ -90,13 +94,30 @@ uint8_t sd_init(void)
     uart_enviar_texto("  eco: "); imprimir_4_bytes(eco);
     uart_enviar_texto("\r\n");
 
-    /* ---- ACMD41: inicializar (repetir hasta que responda 00) ---- */
+    if (r == 0x01)
+    {
+        v2 = 1;
+        /* El eco debe ser 00 00 01 AA. Si no coincide, hay ruido en MISO;
+           se avisa pero se intenta inicializar igual como SD v2. */
+        if (eco[2] != 0x01 || eco[3] != 0xAA)
+            uart_enviar_texto("Aviso: eco de CMD8 invalido (revisar MISO)\r\n");
+    }
+    else if (r != 0x05)   /* 0x05 = comando ilegal => tarjeta SD v1 */
+    {
+        uart_enviar_texto("CMD8 sin respuesta valida\r\n");
+        return 2;
+    }
+
+    /* ---- ACMD41: inicializar (repetir hasta que responda 00) ----
+       El argumento debe incluir la ventana de voltaje 2.7-3.6 V.
+       Solo con HCS (0x40000000) esta tarjeta se queda en 0x01 para siempre. */
+    uint32_t arg = (v2 ? 0x40000000U : 0x00000000U) | 0x00FF8000U;
     int intentos_acmd41 = 0;
-    for (int i = 0; i < 100; i++)
+    for (int i = 0; i < 200; i++)
     {
         sd_seleccionar();
         sd_comando(55, 0, 0x01);
-        r = sd_comando(41, 0x40000000, 0x01);
+        r = sd_comando(41, arg, 0x01);
         sd_soltar();
         intentos_acmd41 = i;
         if (r == 0x00) break;
@@ -105,6 +126,7 @@ uint8_t sd_init(void)
     uart_enviar_texto("ACMD41: "); uart_hexadecimal(r);
     uart_enviar_texto("  (intento "); uart_numero(intentos_acmd41); uart_enviar_texto(")\r\n");
     if (r != 0x00) return 3;   // la tarjeta no terminó de iniciarse
+
     /* ---- CMD58: leer el OCR ---- */
     sd_seleccionar();
     r = sd_comando(58, 0, 0x01);
@@ -115,8 +137,11 @@ uint8_t sd_init(void)
     uart_enviar_texto("  OCR: "); imprimir_4_bytes(ocr);
     uart_enviar_texto("\r\n");
 
+    /* Bit 30 del OCR (CCS): 1 = SDHC/SDXC (direccion por bloque) */
+    sd_es_sdhc = (r == 0x00 && (ocr[0] & 0x40)) ? 1 : 0;
+
     /* ---- Subir la velocidad del SPI1 ---- */
-    spi1_velocidad(3);   // ya inicializada: subir a 5.25 MHz
+    spi1_velocidad(3);   // 84 MHz / 16 = 5.25 MHz para leer los datos
     return 0;            // 0 = tarjeta lista
 }
 
@@ -124,8 +149,10 @@ uint8_t sd_leer_sector(uint32_t sector, uint8_t *buffer)
 {
     sd_seleccionar();
 
-    /* 1. CMD17: leer un sector. El argumento es el número de sector (SDHC) */
-    uint8_t r = sd_comando(17, sector, 0x01); /* 0x01 = CRC válido (aunque no se use) */
+    /* 1. CMD17: leer un sector. SDHC usa número de sector; SDSC usa
+       dirección en bytes (sector * 512). */
+    uint32_t direccion = sd_es_sdhc ? sector : (sector << 9);
+    uint8_t r = sd_comando(17, direccion, 0x01); /* 0x01 = CRC válido (aunque no se use) */
     if (r != 0x00)
     {
         sd_soltar();

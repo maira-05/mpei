@@ -6,7 +6,7 @@ void spi1_init(void)
 {
     RCC->APB2ENR |= RCC_APB2ENR_SPI1EN_Msk; // Habilitar reloj para SPI1
 
-    GPIO_InitTypeDef pin = {GPIO_MODO_AF, 5, GPIO_SIN_PULL, GPIO_BAJA_VELOCIDAD, 5};
+    GPIO_InitTypeDef pin = {GPIO_MODO_AF, 5, GPIO_SIN_PULL, GPIO_MUY_ALTA_VELOCIDAD, 5};
     GPIO_Config(GPIOA, pin); // PA5 (SCK)  = D13
     pin.Pin = 7;
     GPIO_Config(GPIOA, pin); // PA7 (MOSI) = D11
