@@ -1,7 +1,7 @@
 #include "gpio.h"
 
-
-void GPIO_clock_habilitar(volatile GPIO_TypeDef *GPIOx){
+//Habilito todos los relojes que se van a utilizar
+void GPIO_clock_habilitar(volatile GPIO_TypeDef *GPIOx){ 
   if(GPIOx==GPIOA){
     RCC->AHB1ENR |= RCC_AHB1ENR_GPIOAEN_Msk; //habilito el reloj del puerto GPIOA
   } else if(GPIOx==GPIOB){
@@ -15,12 +15,14 @@ void GPIO_clock_habilitar(volatile GPIO_TypeDef *GPIOx){
   } else if(GPIOx==GPIOH){
     RCC->AHB1ENR |= RCC_AHB1ENR_GPIOHEN_Msk; //habilito el reloj del puerto GPIOH
   }
-  volatile unsigned int dummy;
+  // Lee el registro AHB1ENR para asegurarse de que el reloj se ha habilitado
+  volatile unsigned int dummy; 
   dummy = (RCC->AHB1ENR);//leo el registro para asegurarme de que el reloj se ha habilitado
   dummy = (RCC->AHB1ENR);
   (void)dummy; //evito la advertencia de variable no utilizada
 }
 
+// Configuro el pin del puerto GPIOx con la estructura de configuración
 void GPIO_Config(volatile GPIO_TypeDef *GPIOx, GPIO_InitTypeDef Config)
 {
   GPIO_clock_habilitar(GPIOx); //habilito el reloj del puerto GPIOx
