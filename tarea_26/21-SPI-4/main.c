@@ -11,6 +11,7 @@
 #include "inc/usart.h"
 #include "max7219.h"
 
+
 #define LED_PIN 5 // Pin 5 corresponds to the on-board LED on the NUCLEO-64 board
 #define BUTTON_PIN 13 // Pin 13 corresponds to the on-board button on the NUCLEO-64 board
 /*Declaration of two timers made by software updated every 1ms*/
