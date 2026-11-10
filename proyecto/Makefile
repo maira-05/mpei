@@ -17,11 +17,14 @@ LINKERSCRIPT = linker_script.ld
 INCLUDE = -I./inc
 INCLUDE += -I./inc/cmsis
 INCLUDE += -I./source
+INCLUDE += -I./tft_fuentes
 
 # Archivos fuente en C (carpeta principal y src/)
 C_SRC = $(wildcard *.c)
 C_SRC += $(wildcard src/*.c)
 C_SRC += $(wildcard source/*.c)
+C_SRC += $(wildcard tft_fuentes/*.c)
+
 # Archivos fuente en lenguaje de ensamblador
 ASM_SRC = $(wildcard *.S)
 
@@ -70,7 +73,7 @@ $(APPNAME).elf: $(OBJS)
 #ejecuta la limpieza de archivos generados
 .PHONY: clean
 clean:
-	rm -f *.o src/*.o *.elf *.img source/*.o
+	rm -f *.o src/*.o *.elf *.img source/*.o tft_fuentes/*.o
 
 #ejecuta la carga del programa en la placa
 .PHONY: flash

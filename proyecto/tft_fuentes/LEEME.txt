@@ -1,0 +1,27 @@
+FUENTES PARA LA PANTALLA ST7789 (bare-metal, STM32F401RE)
+
+Qué hay aquí
+- Fonts/                 Fuentes ORIGINALES de Adafruit GFX (sin modificar).
+- gfxfont.h              Estructuras GFXglyph / GFXfont + PROGMEM vacío.
+- Adafruit_GFX.h         Archivo puente: cada fuente hace #include <Adafruit_GFX.h>;
+                         este reemplaza a la librería real (que necesita Arduino)
+                         y solo incluye gfxfont.h.
+- tft_text.h / .c        Funciones propias para dibujar texto.
+
+Pasos
+1. Copiar esta carpeta (o su contenido) al proyecto.
+2. Makefile: agregar tft_text.c a los fuentes y -I. a los CFLAGS
+   (las fuentes usan #include <...>, que busca en las rutas -I).
+3. En tft_text.c cambiar tft_set_window() y tft_push_color() por las
+   funciones de tft.c.
+4. Incluir las fuentes que se usen en UN SOLO archivo .c:
+     #include "Fonts/FreeSans9pt7b.h"
+     #include "Fonts/FreeSansBold12pt7b.h"
+     #include "tft_text.h"
+
+Flash aproximada por fuente: FreeSans9pt7b 1.9 KB, FreeSansBold12pt7b 3.0 KB,
+FreeSansBold18pt7b 5.3 KB, DigitalWF24pt7b 10.8 KB, TomThumb 1 KB.
+Solo ocupan Flash las que se incluyen.
+
+NO copiar Adafruit_GFX.cpp, Adafruit_SPITFT.cpp, etc.: necesitan Arduino y
+no compilan en bare-metal.
