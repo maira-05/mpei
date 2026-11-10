@@ -2,12 +2,13 @@
 #include "gpio.h"
 #include "stm32f4xx.h"
 
+//funciones para inicializar y transferir datos por SPI1 y SPI2
 void spi1_init(void)
 {
     RCC->APB2ENR |= RCC_APB2ENR_SPI1EN_Msk; // Habilitar reloj para SPI1
 
-    GPIO_InitTypeDef pin = {GPIO_MODO_AF, 5, GPIO_SIN_PULL, GPIO_MUY_ALTA_VELOCIDAD, 5};
-    GPIO_Config(GPIOA, pin); // PA5 (SCK)  = D13
+    GPIO_InitTypeDef pin = {GPIO_MODO_AF, 5, GPIO_SIN_PULL, GPIO_MUY_ALTA_VELOCIDAD, 5}; //aquí fue donde arreglamos el problema "GPIO_BAJA_VELOCIDAD" -> "GPIO_ALTA_VELOCIDAD" razon aun no sabemos
+    GPIO_Config(GPIOA, pin); // PA5 (SCK) = D13
     pin.Pin = 7;
     GPIO_Config(GPIOA, pin); // PA7 (MOSI) = D11
     pin.Pin = 6;
