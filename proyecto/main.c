@@ -19,10 +19,10 @@
 #define NUM_BOTONES 5
 #define BTN_POWER 13        //Boton azul de la nucleo y la que encendera todo (azul=encendido, blanco=apagado)
  
-// ===== Estados del reproductor =====
-#define DETENIDO      0
+//Estados del reproductor 
+#define DETENIDO      0 //para el boton de stop
 #define REPRODUCIENDO 1
-#define PAUSADO       2
+#define PAUSADO       2 //para el boton de pausa
 
 static FATFS fs;            // libreria de sistema de archivos
 static FIL   archivo;       // archivo WAV abierto actualmente
@@ -260,7 +260,7 @@ int main(void)
         }
         else if (boton == 4)                              // MENU (lo hacemos con la pantalla)
         {
-            uart_enviar_texto("Menu (pendiente)\r\n");
+            uart_enviar_texto("Menu\r\n"); //aun no tenemos 
         }
     }
 }

@@ -51,5 +51,5 @@ void audio_muestreo_init(uint32_t frecuencia)
 
 void audio_poner_muestra(uint8_t valor)
 {
-    TIM2->CCR1 = valor;           // ¿qué registro define el duty del canal 1?
+    TIM2->CCR1 = valor;  
 }
