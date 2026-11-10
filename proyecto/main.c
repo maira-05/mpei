@@ -11,7 +11,7 @@
 #define NUM_CANCIONES  40     // CANC01 ... CANC40
 
 // ===== Botones: todos en el puerto C, entre el pin y GND =====
-#define BTN_PAUSE  10        // PC10
+#define BTN_PAUSE  10       // PC10
 #define BTN_STOP   11       // PC11
 #define BTN_NEXT   12       // PC12
 #define BTN_PREV   8        // PC8
@@ -24,29 +24,29 @@
 #define REPRODUCIENDO 1
 #define PAUSADO       2
 
-static FATFS fs;
-static FIL   archivo;
+static FATFS fs;            // libreria de sistema de archivos
+static FIL   archivo;       // archivo WAV abierto actualmente
 
-// ===== Doble buffer (igual que antes) =====
-static uint8_t buffer[2][TAM_BUFFER];
-static volatile uint8_t  lleno[2];
+// ===== Doble buffer =====
+static uint8_t buffer[2][TAM_BUFFER];       // [0] y [1] son los dos buffers de audio
+static volatile uint8_t  lleno[2];          // 1 = lleno, 0 = vacio
 static volatile uint8_t  activo = 0;
 static volatile uint32_t pos = 0;
 
 static uint8_t estado  = DETENIDO;
 static uint8_t cancion = 1;           // numero de la cancion actual (1..40)
 
-// Arreglo con los pines: boton 0 = Pause, 1 = Stop, 2 = Next, 3 = Prev, 4 = Menu
+// Vector con los pines: boton 0 = Pause, 1 = Stop, 2 = Next, 3 = Prev, 4 = Menu
 static const uint8_t pines_botones[NUM_BOTONES] = {BTN_PAUSE, BTN_STOP, BTN_NEXT, BTN_PREV, BTN_MENU};
 static uint8_t anterior[NUM_BOTONES] = {1, 1, 1, 1, 1};   // 1 = suelto
 
 //¿El reproductor arranca?
-static uint8_t encendido = 0;   // 0 = apagado, 1 = encendido
+static uint8_t encendido = 0;        // 0 = apagado, 1 = encendido
 static uint8_t anterior_power = 1;   // 1 = suelto, 0 = presionado
-// ===== Interrupcion del TIM3 (IGUAL que la que ya tienen, copienla aqui) =====
-void TIM3_IRQHandler(void)
+
+void TIM3_IRQHandler(void)      // [1] Interrupcion del TIM3, que se activa cada 1/22050 s (cada muestra)
 {
-    if (TIM3->SR & TIM_SR_UIF)
+    if (TIM3->SR & TIM_SR_UIF)  
     {
         TIM3->SR &= ~TIM_SR_UIF;
 
@@ -86,7 +86,7 @@ static int boton_presionado(void)
     for (int i = 0; i < NUM_BOTONES; i++)
     {
         uint8_t actual = leer_pin_state(GPIOC, pines_botones[i]);
-        if (anterior[i] == 1 && actual == 0 && presionado == -1)    // [3] flanco: suelto -> presionado
+        if (anterior[i] == 1 && actual == 0 && presionado == -1)    // [3] flanco de bajada: suelto -> presionado 
             presionado = i;
         anterior[i] = actual;
     }
@@ -97,8 +97,8 @@ static int boton_presionado(void)
 // ===== Silencio y detener la interrupcion =====
 static void detener_audio(void)
 {
-    TIM3->CR1 &= ~TIM_CR1_CEN;                // [4] apagar el contador del TIM3 (ya lo usan en "Fin de la cancion")
-    audio_poner_muestra(128);
+    TIM3->CR1 &= ~TIM_CR1_CEN;                // [4] apagar el contador del TIM3 
+    audio_poner_muestra(128);                 
 }
 
 // ===== Buscar el chunk "data" (es SU codigo del main, movido a una funcion) =====
@@ -173,7 +173,7 @@ int main(void)
     while (1)
     {
         uint8_t power_actual = leer_pin_state(GPIOC, BTN_POWER);
-        if (anterior_power == 1 && power_actual == 0)    // fl
+        if (anterior_power == 1 && power_actual == 0)    // flanco de bajada: suelto -> presionado
         {
             if (encendido)                    // estaba encendido -> APAGAR
             {
