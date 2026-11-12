@@ -6,6 +6,7 @@
 #include "uart.h"
 #include "ff.h"
 #include "audio.h"
+#include "pantalla.h"     // interfaz: que se muestra en la pantalla
 
 #define TAM_BUFFER     4096   // bytes por buffer (~93 ms de audio)
 #define NUM_CANCIONES  40     // CANC01 ... CANC40
@@ -35,6 +36,9 @@ static volatile uint32_t pos = 0;
 
 static uint8_t estado  = DETENIDO;
 static uint8_t cancion = 1;           // numero de la cancion actual (1..40)
+
+// ===== Nombres de las canciones (se leen de NOMBRES.TXT al arrancar) =====
+static char nombres[NUM_CANCIONES][40];   // 40 nombres de hasta 39 letras + '\0' (1600 bytes de RAM)
 
 // Vector con los pines: boton 0 = Pause, 1 = Stop, 2 = Next, 3 = Prev, 4 = Menu
 static const uint8_t pines_botones[NUM_BOTONES] = {BTN_PAUSE, BTN_STOP, BTN_NEXT, BTN_PREV, BTN_MENU};
@@ -145,7 +149,48 @@ static uint8_t iniciar_cancion(uint8_t numero)   // devuelve 0 si arranco bien
     // 6. Arrancar
     audio_muestreo_init(22050);
     estado = REPRODUCIENDO;                                 // reproduce la cancion
+
+    // 7. Actualizar la pantalla DESPUES de arrancar el audio: mientras se dibuja (~50 ms),
+    //    la interrupcion ya esta sonando con los ~186 ms guardados en los dos buffers
+    pantalla_cancion(numero, nombres[numero - 1]);   // cancion 1 -> nombres[0]
+    pantalla_estado("Reproduciendo");
     return 0;
+}
+
+// ===== Leer NOMBRES.TXT de la SD; si falla, cada cancion queda como "CANCxx" =====
+// Se lee UNA sola vez al arrancar: asi, mientras suena la musica, la SD solo se usa para el audio
+static void cargar_nombres(void)
+{
+    FIL f;                                     // archivo propio (no usar "archivo", que es el del audio)
+
+    // 1. Nombres por defecto, por si el .txt no esta
+    for (uint8_t i = 0; i < NUM_CANCIONES; i++)
+    {
+        char *n = nombres[i];
+        n[0] = 'C'; n[1] = 'A'; n[2] = 'N'; n[3] = 'C';
+        n[4] = '0' + ((i + 1) / 10);           // i + 1 porque el arreglo empieza en 0 y las canciones en 1
+        n[5] = '0' + ((i + 1) % 10);
+        n[6] = '\0';                           // fin del texto
+    }
+
+    // 2. Abrir el .txt (misma carpeta que los WAV)
+    if (f_open(&f, "/MUSIC/EPIC/NOMBRES.TXT", FA_READ) != FR_OK)
+    {
+        uart_enviar_texto("Sin NOMBRES.TXT\r\n");
+        return;
+    }
+
+    // 3. Leer una linea por cancion
+    for (uint8_t i = 0; i < NUM_CANCIONES; i++)
+    {
+        if (f_gets(nombres[i], 40, &f) == 0) break;   // 0 = se acabo el archivo
+        // f_gets deja el salto de linea al final ("Storm\r\n"): se corta ahi
+        for (uint8_t k = 0; nombres[i][k] != '\0'; k++)
+        {
+            if (nombres[i][k] == '\r' || nombres[i][k] == '\n') { nombres[i][k] = '\0'; break; }
+        }
+    }
+    f_close(&f);
 }
 
 // ===== Siguiente y anterior, dando la vuelta (40 -> 1 y 1 -> 40) =====
@@ -155,7 +200,6 @@ static uint8_t previa(uint8_t n)    { return (n <= 1) ? NUM_CANCIONES : n - 1; }
 int main(void)
 {
     tft_init();
-    tft_llenar(TFT_AZUL);
     tft_apagar();
 
     uart_init(115200);
@@ -169,6 +213,7 @@ int main(void)
 
     FRESULT fr = f_mount(&fs, "", 1);
     uart_enviar_texto("f_mount: "); uart_numero(fr); uart_enviar_texto("\r\n");
+    cargar_nombres();            // despues del f_mount: sin la SD montada no se puede abrir el .txt
 
     while (1)
     {
@@ -187,9 +232,10 @@ int main(void)
             else                              // estaba apagado -> ENCENDER
             {
                 tft_encender();
+                pantalla_inicio();            // dibujar lo fijo (fondo, barras, titulo) ANTES de la cancion
                 encendido = 1;
                 uart_enviar_texto("Encendido\r\n");
-                iniciar_cancion(cancion);     // empieza a sonar la cancion donde iba
+                iniciar_cancion(cancion);     // empieza a sonar donde iba (y actualiza la pantalla)
             }
             delay_ms(50);                     // antirrebote
         }
@@ -229,12 +275,14 @@ int main(void)
                 detener_audio();
                 estado = PAUSADO;                                              // [13]
                 uart_enviar_texto("Pausa\r\n");
+                pantalla_estado("Pausa");
             }
             else if (estado == PAUSADO)
             {
                 TIM3->CR1 |= TIM_CR1_CEN;                                          // [14] volver a encender el TIM3
                 estado = REPRODUCIENDO;
                 uart_enviar_texto("Continuar\r\n");
+                pantalla_estado("Reproduciendo");
             }
             else                                          // estaba DETENIDO: empezar desde el principio
             {
@@ -247,6 +295,7 @@ int main(void)
             f_close(&archivo);
             estado = DETENIDO;                                                  // [15]
             uart_enviar_texto("Stop\r\n");
+            pantalla_estado("Stop");         
         }
         else if (boton == 2)                              // NEXT
         {
