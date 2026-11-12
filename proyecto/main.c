@@ -145,6 +145,7 @@ static uint8_t iniciar_cancion(uint8_t numero)   // devuelve 0 si arranco bien
     // 6. Arrancar
     audio_muestreo_init(22050);
     estado = REPRODUCIENDO;                                 // reproduce la cancion
+    uart_enviar_texto("Reproduciendo\r\n");
     return 0;
 }
 
