@@ -51,7 +51,7 @@ void spi2_init(void) // Inicializa el SPI2 en modo maestro, con CPOL=1, CPHA=1 (
 
     // Configuración de SPI2: Modo maestro, CPOL=1, CPHA=1 (modo 3), 8 bits
     SPI2->CR1 = SPI_CR1_MSTR | SPI_CR1_CPOL | SPI_CR1_CPHA | SPI_CR1_SSM | SPI_CR1_SSI;
-    SPI2->CR1 |= (3U << SPI_CR1_BR_Pos); // Configurar la velocidad del reloj (prescaler)
+    SPI2->CR1 |= (1U << SPI_CR1_BR_Pos); // 42 MHz / 4 = 10,5 MHz (antes /16 = 2,6 MHz; la ST7789 aguanta ~60 MHz)
     SPI2->CR1 |= SPI_CR1_SPE; // Habilitar SPI
 }
 
