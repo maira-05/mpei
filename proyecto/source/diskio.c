@@ -6,7 +6,7 @@
 /* This is an example of glue functions to attach various exsisting      */
 /* storage control modules to the FatFs module with a defined API.       */
 /*-----------------------------------------------------------------------*/
-
+//El diskio se descargo de la pagina de ChaN: https://elm-chan.org/fsw/ff/00index_e.html y se adapto para conectar las FatFs con el driver sd
 #include "ff.h"			/* Basic definitions of FatFs */
 #include "diskio.h"		/* Declarations FatFs MAI */
 
@@ -14,7 +14,7 @@
 #include "sd.h"
 
 #define DEV_SD 0 // Physical drive number for SD card
-static DSTATUS estado = STA_NOINIT; // 
+static DSTATUS estado = STA_NOINIT; // estado de la tarjeta SD: STA_NOINIT = 0x01 (no inicializada), 0x00 = inicializada y lista para leer
 /*-----------------------------------------------------------------------*/
 /* Get Drive Status                                                      */
 /*-----------------------------------------------------------------------*/
@@ -38,10 +38,10 @@ DSTATUS disk_initialize (
 )
 {
 	if (pdrv != DEV_SD) return STA_NOINIT;
-	if(sd_init()==0){
-		estado=0;
+	if(sd_init()==0){ //f_mount llega aquí para inicializar el driver de la SD
+		estado=0; //la tarjeta SD está inicializada y lista para leer
 	} else {
-		estado = STA_NOINIT;
+		estado = STA_NOINIT; //fallo
 	}
 	return estado;
 
@@ -64,7 +64,7 @@ DRESULT disk_read (
 	if (estado & STA_NOINIT) return RES_NOTRDY;//Verificar que la tarjeta SD esté inicializada
 	for (UINT i =  0; i < count; i++)//Leer cada sector solicitado
 	{
-		if (sd_leer_sector(sector + i, buff + i * 512) != 0)//Leer un sector y almacenar los datos en el buffer
+		if (sd_leer_sector(sector + i, buff + i * 512) != 0)//Leer un sector y almacenar los datos en el buffer, donde cada sector mmide 512 bytes
 			return RES_ERROR;//Si hay un error al leer el sector, devolver RES_ERROR
 		else
 			continue;//Si se leyó correctamente, continuar con el siguiente sector
@@ -90,7 +90,7 @@ DRESULT disk_ioctl (
 
 	if (pdrv !=  DEV_SD) return RES_PARERR; //Verificar que el número de unidad sea 0 (SD)
 	if (estado & STA_NOINIT) return RES_NOTRDY; //Verificar que la tarjeta SD esté inicializada
-	if (cmd == CTRL_SYNC) return RES_OK; //Si el comando es CTRL_SYNC, devolver RES_OK
+	if (cmd == CTRL_SYNC) return RES_OK; //termina de escribir lo pendiente, pero como solo se lee no hay nada pendiente 
 	else return RES_PARERR; //Si el comando no es reconocido, devolver RES_PARERR
 
 }
