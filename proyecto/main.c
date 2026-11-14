@@ -218,29 +218,29 @@ static uint8_t previa(uint8_t n)    { return (n <= 1) ? NUM_CANCIONES : n - 1; }
 // ===== Abrir el menu: pausa la musica y dibuja la lista =====
 static void abrir_menu(void)
 {
-    sonaba = (estado == REPRODUCIENDO);
+    sonaba = (estado == REPRODUCIENDO); // guarda si la musica estaba reproduciendose antes de darle a menu
     if (sonaba)
     {
-        detener_audio();              // pausar (igual que el boton PAUSE)
-        estado = PAUSADO;
+        detener_audio();                
+        estado = PAUSADO;               // actaliza el estado a pausado mientras se esta en el menu
     }
     en_menu   = 1;
-    seleccion = cancion;
-    pantalla_menu_abrir(nombres, seleccion);
+    seleccion = cancion;                // selecciona que cancion que se estaba reproduciendo para que aparezca en el menu 
+    pantalla_menu_abrir(nombres, seleccion);    // llama al menu para que muestre los nombre y lo marcado
     uart_enviar_texto("Menu\r\n");
 }
 
 // ===== Salir del menu sin elegir: vuelve a la pantalla de reproduccion como estaba =====
 static void salir_menu(void)
 {
-    en_menu = 0;
-    pantalla_inicio();                                  // redibujar la pantalla de reproduccion
+    en_menu = 0;                                        // menu apagado
+    pantalla_inicio();                                 
     pantalla_cancion(cancion, nombres[cancion - 1]);    // con la misma cancion de antes
-    if (sonaba)
+    if (sonaba)                                         // si la cancion esta reproduciendo, antes de abrir el menu
     {
-        TIM3->CR1 |= TIM_CR1_CEN;
-        estado = REPRODUCIENDO;
-        pantalla_estado("Reproduciendo");
+        TIM3->CR1 |= TIM_CR1_CEN;                       // encender el timer del audio
+        estado = REPRODUCIENDO;                         // actualiza al estado para que retome desde donde se entro al menu
+        pantalla_estado("Reproduciendo");               // actualiza el estado en la pantalla
     }
     else if (estado == PAUSADO) pantalla_estado("Pausa");
     else                        pantalla_estado("Stop");
@@ -249,26 +249,26 @@ static void salir_menu(void)
 // ===== Botones cuando el menu esta abierto =====
 static void boton_en_menu(int boton)
 {
-    if (boton == 2)                               // NEXT: bajar
+    if (boton == 2)                                         // NEXT: bajar
     {
         uint8_t anterior = seleccion;                       // guardar la que estaba marcada
         seleccion = siguiente(seleccion);
         pantalla_menu_mover(nombres, anterior, seleccion);
     }
-    else if (boton == 3)                          // PREV: subir
+    else if (boton == 3)                                    // PREV: subir
     {
         uint8_t anterior = seleccion;
         seleccion = previa(seleccion);
-        pantalla_menu_mover(nombres, anterior, seleccion);
+        pantalla_menu_mover(nombres, anterior, seleccion);  // funcion para navegar en el menu
     }
-    else if (boton == 0)                          // PAUSA: elegir
+    else if (boton == 0)                                    // PAUSA: elegir
     {
-        en_menu = 0;
-        cancion = seleccion;
-        pantalla_inicio();                                  // redibujar la pantalla de reproduccion
-        iniciar_cancion(cancion);
+        en_menu = 0;                                        // se sale del menu
+        cancion = seleccion;                                // la cancion actual se actualiza a la seleccionada
+        pantalla_inicio();                                  // redibujar la pantalla de reproduccion  
+        iniciar_cancion(cancion);                           // complementa lo anterior en base a lo seleccionado
     }
-    else if (boton == 4 || boton == 1)            // MENU o STOP: salir sin cambiar
+    else if (boton == 4 || boton == 1)                      // MENU o STOP: salir sin cambiar
     {
         salir_menu();
     }
