@@ -40,6 +40,12 @@ static uint8_t cancion = 1;           // numero de la cancion actual (1..40)
 // ===== Nombres de las canciones (se leen de NOMBRES.TXT al arrancar) =====
 static char nombres[NUM_CANCIONES][40];   // 40 nombres de hasta 39 letras + '\0' (1600 bytes de RAM)
 
+// ===== Menu =====
+static uint8_t en_menu   = 0;   // 1 = el menu esta abierto
+static uint8_t seleccion = 1;   // cancion marcada en el menu (1..40)
+static uint8_t sonaba    = 0;   // 1 = estaba sonando cuando se abrio el menu
+// (sonaba sirve para que al salir del menu la musica vuelva a sonar SOLO si sonaba antes)
+
 // Vector con los pines: boton 0 = Pause, 1 = Stop, 2 = Next, 3 = Prev, 4 = Menu
 static const uint8_t pines_botones[NUM_BOTONES] = {BTN_PAUSE, BTN_STOP, BTN_NEXT, BTN_PREV, BTN_MENU};
 static uint8_t anterior[NUM_BOTONES] = {1, 1, 1, 1, 1};   // 1 = suelto
@@ -197,6 +203,65 @@ static void cargar_nombres(void)
 static uint8_t siguiente(uint8_t n) { return (n >= NUM_CANCIONES) ? 1 : n + 1; }    // [9]
 static uint8_t previa(uint8_t n)    { return (n <= 1) ? NUM_CANCIONES : n - 1; }                // [10]
 
+// ===== Abrir el menu: pausa la musica y dibuja la lista =====
+static void abrir_menu(void)
+{
+    sonaba = (estado == REPRODUCIENDO);
+    if (sonaba)
+    {
+        detener_audio();              // pausar (igual que el boton PAUSE)
+        estado = PAUSADO;
+    }
+    en_menu   = 1;
+    seleccion = cancion;
+    pantalla_menu_abrir(nombres, seleccion);
+    uart_enviar_texto("Menu\r\n");
+}
+
+// ===== Salir del menu sin elegir: vuelve a la pantalla de reproduccion como estaba =====
+static void salir_menu(void)
+{
+    en_menu = 0;
+    pantalla_inicio();                                  // redibujar la pantalla de reproduccion
+    pantalla_cancion(cancion, nombres[cancion - 1]);    // con la misma cancion de antes
+    if (sonaba)
+    {
+        TIM3->CR1 |= TIM_CR1_CEN;
+        estado = REPRODUCIENDO;
+        pantalla_estado("Reproduciendo");
+    }
+    else if (estado == PAUSADO) pantalla_estado("Pausa");
+    else                        pantalla_estado("Stop");
+}
+
+// ===== Botones cuando el menu esta abierto =====
+static void boton_en_menu(int boton)
+{
+    if (boton == 2)                               // NEXT: bajar
+    {
+        uint8_t anterior = seleccion;                       // guardar la que estaba marcada
+        seleccion = siguiente(seleccion);
+        pantalla_menu_mover(nombres, anterior, seleccion);
+    }
+    else if (boton == 3)                          // PREV: subir
+    {
+        uint8_t anterior = seleccion;
+        seleccion = previa(seleccion);
+        pantalla_menu_mover(nombres, anterior, seleccion);
+    }
+    else if (boton == 0)                          // PAUSA: elegir
+    {
+        en_menu = 0;
+        cancion = seleccion;
+        pantalla_inicio();                                  // redibujar la pantalla de reproduccion
+        iniciar_cancion(cancion);
+    }
+    else if (boton == 4 || boton == 1)            // MENU o STOP: salir sin cambiar
+    {
+        salir_menu();
+    }
+}
+
 int main(void)
 {
     tft_init();
@@ -225,6 +290,7 @@ int main(void)
                 detener_audio();
                 f_close(&archivo);
                 estado = DETENIDO;                                            // [D]
+                en_menu = 0;                  // si se apaga con el menu abierto, se cierra
                 tft_apagar();
                 encendido = 0;
                 uart_enviar_texto("Apagado\r\n");
@@ -268,6 +334,14 @@ int main(void)
 
         // ===== 2. Botones (su cadena if / else if) =====
         int boton = boton_presionado();
+        if (boton == -1) continue;                        // ningun boton: volver a rellenar buffers
+
+        if (en_menu)                                      // con el menu abierto los botones cambian de funcion
+        {
+            boton_en_menu(boton);
+            continue;                                     // y NO seguir con la cadena de abajo
+        }
+
         if (boton == 0)                                   // PAUSE
         {
             if (estado == REPRODUCIENDO)
@@ -307,9 +381,9 @@ int main(void)
             cancion = previa(cancion);                                                 // [17]
             iniciar_cancion(cancion);
         }
-        else if (boton == 4)                              // MENU (lo hacemos con la pantalla)
+        else if (boton == 4)                              // MENU
         {
-            uart_enviar_texto("Menu\r\n"); //aun no tenemos 
+            abrir_menu();
         }
     }
 }
