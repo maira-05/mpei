@@ -25,6 +25,10 @@
 #define REPRODUCIENDO 1
 #define PAUSADO       2 //para el boton de pausa
 
+//Volumen y filtro pasa-altos para las canciones
+#define VOLUMEN_SHIFT 1 // para reducir el volumen, desplazar a la derecha los valores de las muestras
+#define FILTRO_K 5 //pasa-altosfc ~ 22050 / (2*pi*2^K) -> K=5 = ~110 Hz
+
 static FATFS fs;            // libreria de sistema de archivos
 static FIL   archivo;       // archivo WAV abierto actualmente
 
@@ -67,6 +71,14 @@ void TIM3_IRQHandler(void)      // [1] Interrupcion del TIM3, que se activa cada
         }
 
         int16_t muestra = (int16_t)(buffer[activo][pos] | (buffer[activo][pos + 1] << 8));
+        // Filtro pasa-altos: quita los graves muy bajos que el parlante no puede reproducir
+        static int32_t lento = 0;                   // promedio lento de la senal (= los graves)
+        lento += (muestra - lento) >> FILTRO_K;     // se acerca poco a poco a la senal
+        int32_t y = muestra - lento;                // senal - graves = senal sin graves
+        if (y >  32767) y =  32767;                 // no pasarse del rango de 16 bits
+        if (y < -32768) y = -32768;
+        muestra = (int16_t)y;
+        muestra =muestra >> VOLUMEN_SHIFT;
         audio_poner_muestra((uint8_t)((muestra + 32768) >> 8));
         pos += 2;
 
@@ -301,7 +313,7 @@ int main(void)
                 pantalla_inicio();            // dibujar lo fijo (fondo, barras, titulo) ANTES de la cancion
                 encendido = 1;
                 uart_enviar_texto("Encendido\r\n");
-                iniciar_cancion(cancion);     // empieza a sonar donde iba (y actualiza la pantalla)
+                abrir_menu();                 // inicia en menu 
             }
             delay_ms(50);                     // antirrebote
         }
