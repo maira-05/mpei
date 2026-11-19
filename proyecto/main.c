@@ -58,7 +58,7 @@ static uint8_t anterior[NUM_BOTONES] = {1, 1, 1, 1, 1};   // 1 = suelto
 static uint8_t encendido = 0;        // 0 = apagado, 1 = encendido
 static uint8_t anterior_power = 1;   // 1 = suelto, 0 = presionado
 
-void TIM3_IRQHandler(void)      // [1] Interrupcion del TIM3, que se activa cada 1/22050 s (cada muestra)
+void TIM3_IRQHandler(void)      // Interrupcion TIM3 se activa cada 1/22050 s (cada muestra)
 {
     if (TIM3->SR & TIM_SR_UIF)  
     {
@@ -96,7 +96,7 @@ static void botones_init(void)
 {
     for (int i = 0; i < NUM_BOTONES; i++)
     {
-        GPIO_InitTypeDef b = {GPIO_MODO_ENTRADA, pines_botones[i], GPIO_PULL_UP, GPIO_BAJA_VELOCIDAD, 0};   // [2]
+        GPIO_InitTypeDef b = {GPIO_MODO_ENTRADA, pines_botones[i], GPIO_PULL_UP, GPIO_BAJA_VELOCIDAD, 0};   // 
         GPIO_Config(GPIOC, b);
     }
 }
@@ -108,7 +108,7 @@ static int boton_presionado(void)
     for (int i = 0; i < NUM_BOTONES; i++)
     {
         uint8_t actual = leer_pin_state(GPIOC, pines_botones[i]);
-        if (anterior[i] == 1 && actual == 0 && presionado == -1)    // [3] flanco de bajada: suelto -> presionado 
+        if (anterior[i] == 1 && actual == 0 && presionado == -1)    //  flanco de bajada: suelto -> presionado 
             presionado = i;
         anterior[i] = actual;
     }
@@ -119,7 +119,7 @@ static int boton_presionado(void)
 // ===== Silencio y detener la interrupcion =====
 static void detener_audio(void)
 {
-    TIM3->CR1 &= ~TIM_CR1_CEN;                // [4] apagar el contador del TIM3 
+    TIM3->CR1 &= ~TIM_CR1_CEN;                // apagar el contador del TIM3 
     audio_poner_muestra(128);                 
 }
 
@@ -212,8 +212,8 @@ static void cargar_nombres(void)
 }
 
 // ===== Siguiente y anterior, dando la vuelta (40 -> 1 y 1 -> 40) =====
-static uint8_t siguiente(uint8_t n) { return (n >= NUM_CANCIONES) ? 1 : n + 1; }    // [9]
-static uint8_t previa(uint8_t n)    { return (n <= 1) ? NUM_CANCIONES : n - 1; }                // [10]
+static uint8_t siguiente(uint8_t n) { return (n >= NUM_CANCIONES) ? 1 : n + 1; }      // 
+static uint8_t previa(uint8_t n)    { return (n <= 1) ? NUM_CANCIONES : n - 1; }      // 
 
 // ===== Abrir el menu: pausa la musica y dibuja la lista =====
 static void abrir_menu(void)
@@ -285,7 +285,7 @@ int main(void)
     botones_init();
     audio_pwm_init();            // PA0 queda en silencio (128) desde el arranque
     
-    GPIO_InitTypeDef power = {GPIO_MODO_ENTRADA, BTN_POWER, GPIO_SIN_PULL, GPIO_BAJA_VELOCIDAD, 0};   // [B]
+    GPIO_InitTypeDef power = {GPIO_MODO_ENTRADA, BTN_POWER, GPIO_SIN_PULL, GPIO_BAJA_VELOCIDAD, 0};   
     GPIO_Config(GPIOC, power);
 
     FRESULT fr = f_mount(&fs, "", 1);
@@ -295,31 +295,31 @@ int main(void)
     while (1)
     {
         uint8_t power_actual = leer_pin_state(GPIOC, BTN_POWER);
-        if (anterior_power == 1 && power_actual == 0)    // flanco de bajada: suelto -> presionado
+        if (anterior_power == 1 && power_actual == 0)                     // flanco de bajada: suelto -> presionado
         {
-            if (encendido)                    // estaba encendido -> APAGAR
+            if (encendido)                                                // estaba encendido -> APAGAR
             {
                 detener_audio();
                 f_close(&archivo);
-                estado = DETENIDO;                                            // [D]
-                en_menu = 0;                  // si se apaga con el menu abierto, se cierra
+                estado = DETENIDO;                                            
+                en_menu = 0;                                               // si se apaga con el menu abierto, se cierra
                 tft_apagar();
                 encendido = 0;
                 uart_enviar_texto("Apagado\r\n");
             }
-            else                              // estaba apagado -> ENCENDER
+            else                                                            // estaba apagado -> ENCENDER
             {
                 tft_encender();
-                pantalla_inicio();            // dibujar lo fijo (fondo, barras, titulo) ANTES de la cancion
+                pantalla_inicio();                                          // dibujar lo fijo (fondo, barras, titulo) ANTES de la cancion
                 encendido = 1;
                 uart_enviar_texto("Encendido\r\n");
-                abrir_menu();                 // inicia en menu 
+                abrir_menu();                                               // inicia en menu 
             }
-            delay_ms(50);                     // antirrebote
+            delay_ms(50);                                                   // antirrebote
         }
         anterior_power = power_actual;
 
-        if (!encendido) continue;   // si esta apagado, no hacer nada mas
+        if (!encendido) continue;                                           // si esta apagado, no hacer nada mas
         // ===== 1. Rellenar buffers (SIEMPRE, mientras suena) =====
 
         if (estado == REPRODUCIENDO)
@@ -330,15 +330,15 @@ int main(void)
                 {
                     UINT leidos;
                     f_read(&archivo, buffer[b], TAM_BUFFER, &leidos);
-                    if (leidos == 0)                          // se acabo la cancion
+                    if (leidos == 0)                                          // se acabo la cancion
                     {
                         uart_enviar_texto("Fin de la cancion\r\n");
-                        cancion = siguiente(cancion);                         // [11] pasar a la siguiente
+                        cancion = siguiente(cancion);                         // pasar a la siguiente
                         iniciar_cancion(cancion);
                         break;
                     }
                     // El ultimo pedazo casi nunca llena los 4096: el resto se llena con silencio
-                    for (UINT i = leidos; i < TAM_BUFFER; i++) buffer[b][i] = 0;   // [12]
+                    for (UINT i = leidos; i < TAM_BUFFER; i++) buffer[b][i] = 0;   
                     lleno[b] = 1;
                 }
             }
@@ -359,13 +359,13 @@ int main(void)
             if (estado == REPRODUCIENDO)
             {
                 detener_audio();
-                estado = PAUSADO;                                              // [13]
+                estado = PAUSADO;                         // se actualiza el estado
                 uart_enviar_texto("Pausa\r\n");
                 pantalla_estado("Pausa");
             }
             else if (estado == PAUSADO)
             {
-                TIM3->CR1 |= TIM_CR1_CEN;                                          // [14] volver a encender el TIM3
+                TIM3->CR1 |= TIM_CR1_CEN;                 // volver a encender el TIM3
                 estado = REPRODUCIENDO;
                 uart_enviar_texto("Continuar\r\n");
                 pantalla_estado("Reproduciendo");
@@ -379,18 +379,18 @@ int main(void)
         {
             detener_audio();
             f_close(&archivo);
-            estado = DETENIDO;                                                  // [15]
+            estado = DETENIDO;                                                  
             uart_enviar_texto("Stop\r\n");
             pantalla_estado("Stop");         
         }
         else if (boton == 2)                              // NEXT
         {
-            cancion = siguiente(cancion);                                                 // [16]
+            cancion = siguiente(cancion);                                                 
             iniciar_cancion(cancion);
         }
         else if (boton == 3)                              // PREV
         {
-            cancion = previa(cancion);                                                 // [17]
+            cancion = previa(cancion);                                                 
             iniciar_cancion(cancion);
         }
         else if (boton == 4)                              // MENU
