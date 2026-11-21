@@ -231,7 +231,45 @@ MUSIC/
 
 ## 8. Pruebas por componente
 
-[Pendiente: programas de prueba de cada driver y módulo.]
+Antes de integrar el reproductor, cada parte del hardware se probó por separado con un
+programa propio. Están en `pruebas/`, numerados en el orden en que se hicieron. Cada uno
+es **independiente**: tiene su propio `Makefile`, `crt0.S` y linker script, y funciona con
+el reloj interno de 16 MHz (HSI), sin depender de los drivers del proyecto.
+
+Para correr cualquiera:
+
+```bash
+cd pruebas/01_pines       # o la prueba que se quiera
+make
+make flash
+```
+
+| Prueba                 | Qué comprueba                                           | Cómo se ve si funciona                                                    |
+| ---------------------- | ------------------------------------------------------- | ------------------------------------------------------------------------- |
+| `01_pines`             | Cableado de la pantalla, sin SPI                        | Cada pin (CS, SCK, SDA, DC, RST) marca 3,3 V en el multímetro durante 2 s |
+| `02_pantalla_parlante` | SPI2 + ST7789 (modo 0, 8 MHz) y PWM + filtro + GF1002   | Pantalla roja, verde, azul y blanca; tonos de 440, 660 y 880 Hz           |
+| `03_pantalla_modo3`    | Lo mismo, con SPI en **modo 3** a 1 MHz                 | Igual que la 02 (con esta versión funcionó la pantalla)                   |
+| `04_sd`                | Inicio de la microSD, lectura del sector 0 y FAT32      | Pantalla verde; si falla, roja y el LED parpadea N veces (paso que falló) |
+| `05_sd_uart`           | Lo mismo que la 04, mostrando cada respuesta por UART   | Las respuestas de cada comando en el monitor serie (115200 baudios)       |
+| `06_audio_flash`       | DAC por PWM (TIM2) e interrupción de TIM3 a 22 050 Hz   | Suena un fragmento de canción guardado en la Flash                        |
+
+**Notas:**
+
+- **`04_sd` y `05_sd_uart` usan el cableado de la primera versión:** la SD en PB3 (SCK),
+  PB4 (MISO) y PB5 (MOSI). Con estas pruebas se encontró que PB3 es también la salida SWO
+  de depuración y causaba fallas, por lo que en el proyecto final la SD se movió a
+  PA5–PA7. Para usarlas, conectar la SD en esos pines.
+- **`02` frente a `03`:** la pantalla no funcionó en modo SPI 0; la versión en modo 3
+  (CPOL = 1, CPHA = 1) sí, y ese es el modo que usa el driver del proyecto.
+- **`06_audio_flash`** no usa la microSD: el fragmento está en `src/cancion.c`. Para
+  cambiarlo: `python wav_a_c.py CANCION.WAV [inicio_s] [duracion_s]` (máximo ~18 s).
+- **Herramienta en el PC:** `pruebas/herramientas/revisar_wavs.py` revisa que los WAV
+  de la microSD tengan el formato correcto (PCM, 16 bits, mono, 22 050 Hz, nombre 8.3):
+  `python revisar_wavs.py E:\` (Windows) o `python revisar_wavs.py /media/sd` (Linux).
+
+En el proyecto final, el driver de la SD (`sd.c`) imprime por UART la respuesta a cada
+comando de inicio (CMD0, CMD8, ACMD41, CMD58), lo que sirve como modo de prueba del
+driver propio.
 
 ## 9. Problemas comunes
 
